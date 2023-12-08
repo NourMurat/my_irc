@@ -1,9 +1,7 @@
-NAME = ircserv
+NAME = Server
 
 FILES = main.cpp\
-		parsingCommandLine.cpp \
-		Server.cpp\
-		User.cpp
+		server.cpp
 
 OBJ = $(FILES:.cpp=.o)
 
@@ -11,13 +9,9 @@ CXXFLAGS = -std=c++98 -Wall -Werror -Wextra -g3
 
 CXX = c++
 
-HEADER = 	irc.hpp \
-			Server.hpp \
-			User.hpp 
-
 all: $(NAME) $(OBJ)
 
-$(NAME): $(OBJ) $(HEADER)
+$(NAME): $(OBJ)
 	$(CXX) $(CXXFLAGS) $(OBJ) -o $(NAME)
 
 clean:
