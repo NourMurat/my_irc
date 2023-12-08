@@ -40,7 +40,6 @@ class Server
     private:
         char            _buffer[4096];
 
-        std::string     _host;
         std::string     _password;
         int             _port;
         bool            _running;
@@ -50,12 +49,13 @@ class Server
         Server (const int& port, const std::string& password);
         ~Server();
 
+        void runServer();
         int createSocket();
         void bindSocket(int sockfd);
         void listenSocket(int sockfd);
         int acceptConection(int sockfd);
         void removeUser(std::vector<User>& users, int fd);
-        void runServer();
+
         std::vector<User> _users;
         std::vector<pollfd> _fds;
 
@@ -70,7 +70,10 @@ struct FindByFD
 
     FindByFD(int fd) : fd(fd) { }
     bool operator()(const User &user) const {
-        return user._fd == fd;
+        return user.getFd() == fd;
+    }
+    bool operator()(const struct pollfd& pfd) const {
+        return pfd.fd == fd;
     }
 };
 

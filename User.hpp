@@ -2,14 +2,21 @@
 #define USER_HPP
 
 #include <iostream>
+#include <unistd.h>
 
 class User
 {
-    public:
+    private:
         int _fd;
+
+    public:
         User(int fd);
         ~User();
-        void parse(std::string msg);
+
+        int     getFd() const;
+        void    closeSocket();
+
+        void    parse(std::string msg);
         bool operator==(const User& other) const { // if find_if is not in cpp 98, change it
             return (this->_fd == other._fd);
         }

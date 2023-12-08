@@ -1,6 +1,6 @@
 #include "Server.hpp"
 
-Server* globalServerInstance = NULL; // for static functions of signals
+Server* globalServerInstance = NULL; // to use static signal and shutdown functions
 
 Server::Server() : _buffer("\0"), _port(0), _running(false)
 {
@@ -8,8 +8,8 @@ Server::Server() : _buffer("\0"), _port(0), _running(false)
     globalServerInstance = this;
 }
 
-Server::Server(const int &port, const std::string &password) : _buffer("\0"), \
-        _host("0.0.0.0"), _password(password), _port(port), _running(false)
+Server::Server(const int &port, const std::string &password) :  \
+        _buffer("\0"), _password(password), _port(port), _running(false)
 {
     globalServerInstance = this;
 }
@@ -20,6 +20,85 @@ Server::~Server()
     shutdownServer();
 }
 
+//===============================<START>========================================================
+
+void Server::runServer()
+{
+    _running = true;
+    signal(SIGINT, Server::sigIntHandler);
+    signal(SIGTERM, Server::sigTermHandler);
+    
+    int sockfd = createSocket();
+    int optval = 1;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, \
+            reinterpret_cast<const char *>(&optval), sizeof(optval)) < 0) {
+        throw std::runtime_error("ERROR! Socket options error!\n");
+    }
+    if (fcntl(sockfd, F_SETFL, O_NONBLOCK) < 0) {
+        throw std::runtime_error("ERROR! File control error!\n");
+    }
+
+    bindSocket(sockfd);
+    listenSocket(sockfd);
+
+    pollfd tmp = {sockfd, POLLIN, 0};
+    _fds.push_back(tmp);
+
+    while(_running)
+    {
+        //int poll(representing a FD, number of FD, timeout);
+        int numFds = poll(_fds.data(), _fds.size(), -1);
+        if (numFds == -1)
+        {
+            std::cout << RED "failed to poll" << RESET << std::endl;
+            exit (EXIT_FAILURE);
+        }
+        for (int i = 0 ; i < (int)_fds.size(); i++){
+            if (_fds[i].revents & POLLIN) { //data that can be read without blocking AND can safely read operation be on it
+                if (_fds[i].fd == sockfd) {
+                    // New client connection and add it to "users, _fds" vectors
+                    int clientFd = acceptConection(sockfd);
+                    pollfd tmp2 = {clientFd, POLLIN, 0};
+                    _fds.push_back(tmp2);
+                    _users.push_back(User(clientFd));
+                    std::cout << BLUE << "new client connected FD:" << clientFd << RESET << std::endl;
+                }
+                else{
+                    // Client message received
+                    int byteRead = read(_fds[i].fd, _buffer, sizeof(_buffer));
+                    _buffer[byteRead - 1] = '\0';
+                    
+                    std::cout << "---------> " << byteRead << std::endl;
+                    if (byteRead <= 0){
+                        std::cout << RED << "Client disconnected FD:" << _fds[i].fd << RESET << std::endl << std::flush;
+                        removeUser(_users, _fds[i].fd);
+                        _fds.erase(_fds.begin() + i);
+                        i--;
+                    }
+                    else {
+                        std::vector<User>::iterator it = std::find_if(_users.begin(), _users.end(), FindByFD(_fds[i].fd));
+
+                        std::string strBuffer(_buffer);
+                        std::cout << BLUE << "Received message from client" << _fds[i].fd << ": " << RESET << strBuffer << std::endl;
+                        it->parse(strBuffer);
+                    }
+                }
+            }
+
+            // if (it->revents & POLLOUT) {
+            //     User* user = findUserByFD(it->fd);
+            //     if (user && !user->getOutgoingMsg().empty()) {
+            //         sendMsg(it->fd, user->getOutgoingMsg().front());
+            //     }
+            // }
+
+        if (!_running)
+				break;
+    }
+}
+
+//===================================<METHODS>====================================================
+
 int Server::createSocket()
 {
     //int socket(int domain, int type, int protocol);
@@ -29,7 +108,7 @@ int Server::createSocket()
         std::cerr << RED "Failed to create socket" << RESET << std::endl;
         exit (EXIT_FAILURE);
     }
-    std::cout << GREEN << "Socket Created" << RESET << std::endl;
+    std::cout << GREEN << "Server Socket Created FD:" << sockfd << RESET << std::endl;
     return sockfd;
 }
 
@@ -76,78 +155,20 @@ int Server::acceptConection(int sockfd)
 
 void Server::removeUser(std::vector<User> &users, int fd)
 {
-    std::vector<User>::iterator it = std::find_if(users.begin(), users.end(), FindByFD(fd));
-    if (it != users.end()) {
-        close(it->_fd);
-        users.erase(it);
+    // Удаление пользователя из списка пользователей
+    std::vector<User>::iterator itUser = std::find_if(users.begin(), users.end(), FindByFD(fd));
+    if (itUser != users.end()) {
+        itUser->closeSocket();
+        users.erase(itUser);
+    }
+    // Удаление файлового дескриптора из _fds
+    std::vector<struct pollfd>::iterator itFd = std::find_if(_fds.begin(), _fds.end(), FindByFD(fd));
+    if (itFd != _fds.end()) {
+        _fds.erase(itFd);
     }
 }
 
-void Server::runServer()
-{
-    _running = true;
-    signal(SIGINT, Server::sigIntHandler);
-    signal(SIGTERM, Server::sigTermHandler);
-    int sockfd = createSocket();
-    int optval = 1;
-    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, \
-            reinterpret_cast<const char *>(&optval), sizeof(optval)) < 0) {
-        throw std::runtime_error("ERROR! Socket options error\n");
-    }
-    if (fcntl(sockfd, F_SETFL, O_NONBLOCK) < 0) {
-        throw std::runtime_error("ERROR! File control error\n");
-    }
-    bindSocket(sockfd);
-    listenSocket(sockfd);
-
-    pollfd tmp = {sockfd, POLLIN, 0};
-    _fds.push_back(tmp);
-
-    while(_running)
-    {
-        //int poll(representing a FD, number of FD, timeout);
-        int numFds = poll(_fds.data(), _fds.size(), -1);
-        if (numFds == -1)
-        {
-            std::cout << RED "failed to poll" << RESET << std::endl;
-            exit (EXIT_FAILURE);
-        }
-        for (int i = 0 ; i < (int)_fds.size(); i++){
-            if (_fds[i].revents & POLLIN) { //data that can be read without blocking AND can safely read operation be on it
-                if (_fds[i].fd == sockfd) {
-                    // New client connection and add it to "users, _fds" vectors
-                    int clientFd = acceptConection(sockfd);
-                    pollfd tmp2 = {clientFd, POLLIN, 0};
-                    _fds.push_back(tmp2);
-                    _users.push_back(User(clientFd));
-                    std::cout << BLUE << "new client connected FD:" << clientFd << RESET << std::endl;
-                }
-                else{
-                    // Client message received
-                    int byteRead = read(_fds[i].fd, _buffer, sizeof(_buffer));
-                    _buffer[byteRead - 1] = '\0';
-                    
-                    std::cout << "---------> " << byteRead << std::endl;
-                    if (byteRead <= 0){
-                        std::cout << RED << "Client disconnected FD :" << _fds[i].fd << RESET << std::endl;
-                        removeUser(_users, _fds[i].fd);
-                        _fds.erase(_fds.begin() + i);
-                        i--;
-                    }
-                    else {
-                        std::vector<User>::iterator it = std::find_if(_users.begin(), _users.end(), FindByFD(_fds[i].fd));
-
-                        std::string strBuffer(_buffer);
-                        std::cout << BLUE << "Received message from client" << _fds[i].fd << ": " << RESET << strBuffer << std::endl;
-                        it->parse(strBuffer);
-                    }
-                }
-            }
-        }
-        if (!_running)
-				break;
-    }
-}
+//====================================<SIGNALS && SHUTDOWN>====================================
 
 // Обработчик для SIGINT
 void Server::sigIntHandler(int signal) {
