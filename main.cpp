@@ -1,4 +1,4 @@
-#include "irc.hpp"
+#include "Irc.hpp"
 #include "Server.hpp"
 #include <signal.h>
 
