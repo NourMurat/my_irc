@@ -1,4 +1,4 @@
-#include "irc.hpp"
+#include "Irc.hpp"
 #include "Server.hpp" //only for colors
 
 int     parsingCommandLine(int ac, char **av)
@@ -46,6 +46,7 @@ int     checkPass(std::string pass)
 {
     if (pass.empty()) {
             throw std::invalid_argument("ERROR! Password is empty.\n");
+            //kjasdnfkj
         }
 
     for (std::size_t i = 0; i < pass.length(); ++i) {

@@ -87,6 +87,7 @@ void Server::runServer()
 
         if (!_running)
 				break;
+        }
     }
 }
 
@@ -180,7 +181,8 @@ void Server::sigTermHandler(int signal) {
 }
 
 // Метод для корректного завершения работы сервера
-void Server::shutdownServer() {
+void Server::shutdownServer()
+{
     std::cout << "Shutting down server..." << std::endl;
     if (globalServerInstance) {
         globalServerInstance->_running = false;
