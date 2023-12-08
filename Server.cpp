@@ -85,13 +85,6 @@ void Server::runServer()
                 }
             }
 
-            // if (it->revents & POLLOUT) {
-            //     User* user = findUserByFD(it->fd);
-            //     if (user && !user->getOutgoingMsg().empty()) {
-            //         sendMsg(it->fd, user->getOutgoingMsg().front());
-            //     }
-            // }
-
         if (!_running)
 				break;
     }
