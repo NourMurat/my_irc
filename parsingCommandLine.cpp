@@ -47,7 +47,7 @@ int     checkPass(std::string pass)
     if (pass.empty()) {
             throw std::invalid_argument("ERROR! Password is empty.\n");
         }
-
+    //test to accept or not
     for (std::size_t i = 0; i < pass.length(); ++i) {
         if (std::isspace(static_cast<unsigned char>(pass[i]))) {
             throw std::invalid_argument("ERROR! Password with spaces.\n");
