@@ -27,6 +27,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include "User.hpp"
+#include "signal.h"
 
 // const int PORT = 6666;
 const int MAX_CLIENTS = 4096;
