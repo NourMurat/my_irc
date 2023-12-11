@@ -9,10 +9,11 @@ class User
 {
 	private:
 		int			_fd;
+		bool        _isAuth;
+		bool		_isOP;
+		std::string _realname;
 		std::string _nickname;
 		std::string _username;
-		bool        _isAuth;
-
 	public:
 		std::vector<std::string>	incomingmsg;
 		std::vector<std::string>	outgoingmsg;
@@ -30,6 +31,8 @@ class User
 		void 					setIsAuth(bool isAuth);
 		void					addMessage(std::string msg);
 		std::deque<std::string> getMessageDeque();
+		bool					getIsOP() const;
+		void					setIsOP(bool isOP);
 
 
 

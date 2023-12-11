@@ -23,15 +23,15 @@ int parsingCommandLine(int ac, char **av)
 
 int checkPort(char *port)
 {
+	char *endptr;
+	long portNbr;
 	if (port == NULL || strlen(port) == 0)
 	{
 		throw std::invalid_argument("ERROR! Port argument is Empty!\n");
 	}
 
-	char *endptr;
 	errno = 0; // Обнуление errno перед вызовом strtol
-	long portNbr = std::strtol(port, &endptr, 10);
-
+	portNbr = std::strtol(port, &endptr, 10);
 	if (endptr == port)
 	{
 		throw std::invalid_argument("ERROR! No digits were found.\n");

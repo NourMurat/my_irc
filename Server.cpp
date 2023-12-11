@@ -23,14 +23,13 @@ Server::~Server()
 
 void Server::runServer()
 {
-    _running = true;
-    signal(SIGINT, Server::sigIntHandler);
-    signal(SIGTERM, Server::sigTermHandler);
-
     int sockfd = createSocket();
     int optval = 1;
-    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR,
-                   reinterpret_cast<const char *>(&optval), sizeof(optval)) < 0)
+
+    signal(SIGINT, Server::sigIntHandler);
+    signal(SIGTERM, Server::sigTermHandler);
+    _running = true;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char *>(&optval), sizeof(optval)) < 0)
     {
         throw std::runtime_error("ERROR! Socket options error!\n");
     }
@@ -51,8 +50,7 @@ void Server::runServer()
         int numFds = poll(_fds.data(), _fds.size(), -1);
         if (numFds == -1)
         {
-            std::cout << RED "failed to poll" << RESET << std::endl;
-            exit(EXIT_FAILURE);
+            throw std::runtime_error("ERROR! Poll error!\n");
         }
         for (int i = 0; i < (int)_fds.size(); i++)
         {
@@ -65,7 +63,6 @@ void Server::runServer()
                     pollfd tmp2 = {clientFd, POLLIN, 0};
                     _fds.push_back(tmp2);
                     _users.push_back(User(clientFd));
-                    std::cout << "huh" << std::endl;
                     std::cout << BLUE << "new client connected FD:" << clientFd << RESET << std::endl;
                 }
                 else
