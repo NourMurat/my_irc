@@ -65,6 +65,7 @@ void Server::runServer()
                     pollfd tmp2 = {clientFd, POLLIN, 0};
                     _fds.push_back(tmp2);
                     _users.push_back(User(clientFd));
+                    std::cout << "huh" << std::endl;
                     std::cout << BLUE << "new client connected FD:" << clientFd << RESET << std::endl;
                 }
                 else
@@ -92,7 +93,6 @@ void Server::runServer()
                     }
                 }
             }
-
             if (!_running)
                 break;
         }

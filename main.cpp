@@ -25,7 +25,5 @@ int main(int ac, char **av)
         return 1;
     }
 
-    // delete S;
-    
     return 0;
 }

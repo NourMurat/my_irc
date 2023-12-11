@@ -3,7 +3,8 @@ NAME = ircserv
 FILES = main.cpp				\
 		parsingCommandLine.cpp	\
 		Server.cpp				\
-		User.cpp
+		User.cpp				\
+		Channel.cpp
 
 OBJ = $(FILES:.cpp=.o)
 
