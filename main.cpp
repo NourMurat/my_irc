@@ -1,4 +1,4 @@
-#include "Irc.hpp"
+#include "irc.hpp"
 #include "Server.hpp"
 #include <signal.h>
 
@@ -13,15 +13,11 @@ int main(int ac, char **av)
         std::string     password = av[2];
 
         Server          S(port, password);
-
-        signal(SIGINT, Server::sigIntHandler);
-        signal(SIGTERM, Server::sigTermHandler);
         S.runServer();
     }
     catch(const std::exception& e)
     {
-        std::cerr << e.what() << '\n';
-        // delete S;
+        std::cerr << RED << e.what() << RESET << '\n';
         return 1;
     }
 

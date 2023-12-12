@@ -1,4 +1,4 @@
-#include "Irc.hpp"
+#include "irc.hpp"
 #include "Server.hpp" //only for colors
 
 int parsingCommandLine(int ac, char **av)
@@ -8,7 +8,7 @@ int parsingCommandLine(int ac, char **av)
 
 	if (ac != 3)
 	{
-		std::cerr << "ERROR! Usage: ./ircserv <port> <password>\n";
+		std::cerr << RED << "ERROR! Usage: ./ircserv <port> <password>\n\n" << RESET;
 		return 1;
 	}
 

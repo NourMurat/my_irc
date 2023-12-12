@@ -10,13 +10,14 @@ Server::Server() : _buffer("\0"), _port(0), _running(false)
 
 Server::Server(const int &port, const std::string &password) : _buffer("\0"), _password(password), _port(port), _running(false)
 {
+    std::cout << GREEN << "Server Parameter Constructor has called!" << RESET << std::endl;
     globalServerInstance = this;
 }
 
 Server::~Server()
 {
     std::cout << RED << "Server Destructor Called" << RESET << std::endl;
-    shutdownServer();
+    // shutdownServer();
 }
 
 //===============================<START>========================================================
@@ -46,6 +47,8 @@ void Server::runServer()
 
     while (_running)
     {
+        if (!_running)
+            break;
         // int poll(representing a FD, number of FD, timeout);
         int numFds = poll(_fds.data(), _fds.size(), -1);
         if (numFds == -1)
@@ -63,6 +66,7 @@ void Server::runServer()
                     pollfd tmp2 = {clientFd, POLLIN, 0};
                     _fds.push_back(tmp2);
                     _users.push_back(User(clientFd));
+                    send(clientFd, "CAP * ACK multi-prefix\r\n", 27, 0);
                     std::cout << BLUE << "new client connected FD:" << clientFd << RESET << std::endl;
                 }
                 else
@@ -90,8 +94,6 @@ void Server::runServer()
                     }
                 }
             }
-            if (!_running)
-                break;
         }
     }
 }
@@ -181,7 +183,7 @@ void Server::removeUser(std::vector<User> &users, int fd)
 // Обработчик для SIGINT
 void Server::sigIntHandler(int signal)
 {
-    std::cout << "\nReceived SIGINT (Ctrl+C) signal: " << signal << std::endl;
+    std::cout << MAGENTA << "\nReceived SIGINT (Ctrl+C) signal: " << signal << RESET << std::endl;
     if (globalServerInstance)
     {
         globalServerInstance->shutdownServer();
@@ -191,7 +193,7 @@ void Server::sigIntHandler(int signal)
 // Обработчик для SIGTERM
 void Server::sigTermHandler(int signal)
 {
-    std::cout << "\nReceived SIGTERM signal: " << signal << std::endl;
+    std::cout << MAGENTA << "\nReceived SIGTERM signal: " << signal << RESET << std::endl;
     if (globalServerInstance)
     {
         globalServerInstance->shutdownServer();
@@ -201,7 +203,7 @@ void Server::sigTermHandler(int signal)
 // Метод для корректного завершения работы сервера
 void Server::shutdownServer()
 {
-    std::cout << "Shutting down server..." << std::endl;
+    std::cout << CYAN << "Shutting down server..." << RESET << std::endl;
     if (globalServerInstance)
     {
         globalServerInstance->_running = false;
@@ -215,6 +217,7 @@ void Server::shutdownServer()
             }
         }
         globalServerInstance->_fds.clear(); // Очистка списка файловых дескрипторов после закрытия всех сокетов
-        std::cout << "Server successfully shut down!" << std::endl;
+        std::cout << CYAN << "Server successfully shut down!" << RESET << std::endl;
+
     }
 }
