@@ -50,19 +50,20 @@ class Server
         Server (const int& port, const std::string& password);
         ~Server();
 
-        void runServer();
-        int createSocket();
-        void bindSocket(int sockfd);
-        void listenSocket(int sockfd);
-        int acceptConection(int sockfd);
-        void removeUser(std::vector<User>& users, int fd);
+        std::vector<pollfd>         _fds;
+        std::vector<User>           _users;
+        // std::map<Channel, Client>   _channels;
 
-        std::vector<User> _users;
-        std::vector<pollfd> _fds;
+        void            runServer();
+        int             createSocket();
+        void            bindSocket(int sockfd);
+        void            listenSocket(int sockfd);
+        int             acceptConection(int sockfd);
+        void            removeUser(std::vector<User>& users, int fd);
 
-        static void sigIntHandler(int signal);
-        static void sigTermHandler(int signal);
-        static void shutdownServer();
+        static void     sigIntHandler(int signal);
+        static void     sigTermHandler(int signal);
+        static void     shutdownServer();
 };
 
 struct FindByFD
