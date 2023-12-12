@@ -3,7 +3,6 @@
 User::User(int fd) : _fd(fd)
 {
     this->_isAuth = false;
-    this->_isOP = false;
     this->_nickname = "";
     this->_username = "";
     this->_realname = "";
@@ -44,16 +43,6 @@ std::string User::getUsername() const
 bool User::getIsAuth() const
 {
     return (_isAuth);
-}
-
-bool User::getIsOP() const
-{
-    return (_isOP);
-}
-
-void User::setIsOP(bool isOP)
-{
-    this->_isOP = isOP;
 }
 
 void User::setNickname(std::string nickname)

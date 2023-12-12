@@ -44,16 +44,17 @@ class Server
 		Server (const int& port, const std::string& password);
 		~Server();
 
-		void				runServer();
-		int					createSocket();
+		void runServer();
+		int createSocket();
 		void				bindSocket(int sockfd);
 		void				listenSocket(int sockfd);
 		int					acceptConection(int sockfd);
 		void				removeUser(std::vector<User>& users, int fd);
+		void	removeUser(int fd);
 
-		std::vector<User>	_users;
+		std::vector<User *>	_users;
 		std::vector<pollfd>	_fds;
-		// void				createNewUser(int fd);
+		void				createNewUser(int fd);
 		static void			sigIntHandler(int signal);
 		static void			sigTermHandler(int signal);
 		static void			shutdownServer();
@@ -64,8 +65,8 @@ struct FindByFD
 	int fd;
 
 	FindByFD(int fd) : fd(fd) { }
-	bool operator()(const User &user) const {
-		return user.getFd() == fd;
+	bool operator()(const User* user) const {
+		return user->getFd() == fd;
 	}
 	bool operator()(const struct pollfd& pfd) const {
 		return pfd.fd == fd;

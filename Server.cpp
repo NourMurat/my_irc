@@ -10,14 +10,13 @@ Server::Server() : _buffer("\0"), _port(0), _running(false)
 
 Server::Server(const int &port, const std::string &password) : _buffer("\0"), _password(password), _port(port), _running(false)
 {
-    std::cout << GREEN << "Server Parameter Constructor has called!" << RESET << std::endl;
     globalServerInstance = this;
 }
 
 Server::~Server()
 {
     std::cout << RED << "Server Destructor Called" << RESET << std::endl;
-    // shutdownServer();
+    shutdownServer();
 }
 
 //===============================<START>========================================================
@@ -47,8 +46,6 @@ void Server::runServer()
 
     while (_running)
     {
-        if (!_running)
-            break;
         // int poll(representing a FD, number of FD, timeout);
         int numFds = poll(_fds.data(), _fds.size(), -1);
         if (numFds == -1)
@@ -65,8 +62,7 @@ void Server::runServer()
                     int clientFd = acceptConection(sockfd);
                     pollfd tmp2 = {clientFd, POLLIN, 0};
                     _fds.push_back(tmp2);
-                    _users.push_back(User(clientFd));
-                    send(clientFd, "CAP * ACK multi-prefix\r\n", 27, 0);
+                    _users.push_back(new User(clientFd));
                     std::cout << BLUE << "new client connected FD:" << clientFd << RESET << std::endl;
                 }
                 else
@@ -75,25 +71,27 @@ void Server::runServer()
                     int byteRead = read(_fds[i].fd, _buffer, sizeof(_buffer));
                     _buffer[byteRead - 1] = '\0';
 
-                    std::cout << "---------> " << byteRead << std::endl;
+                    std::cout << "---------> " << byteRead  << std::endl;
                     if (byteRead <= 0)
                     {
                         std::cout << RED << "Client disconnected FD:" << _fds[i].fd << RESET << std::endl
                                   << std::flush;
-                        removeUser(_users, _fds[i].fd);
+                        removeUser(_fds[i].fd);
                         _fds.erase(_fds.begin() + i);
                         i--;
                     }
                     else
                     {
-                        std::vector<User>::iterator it = std::find_if(_users.begin(), _users.end(), FindByFD(_fds[i].fd));
-
-                        std::string strBuffer(_buffer);
-                        std::cout << BLUE << "Received message from client" << _fds[i].fd << ": " << RESET << strBuffer << std::endl;
-                        it->parse(strBuffer);
+                        for (std::vector<User *>::iterator it = _users.begin(); it != _users.end(); ++it)
+                        {
+                            std::string strBuffer(_buffer);
+                            std::cout << BLUE << "Received message from client" << _fds[i].fd << ": " << RESET << strBuffer << std::endl;
+                        }
                     }
                 }
             }
+            if (!_running)
+                break;
         }
     }
 }
@@ -145,6 +143,7 @@ int Server::acceptConection(int sockfd)
     struct sockaddr_in clientAddr; // hold clientAddr information
     socklen_t clientLen = sizeof(clientAddr);
     // int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+ 
     int clientFd = accept(sockfd, (struct sockaddr *)&clientAddr, &clientLen);
     if (clientFd == -1)
     {
@@ -152,30 +151,31 @@ int Server::acceptConection(int sockfd)
         exit(EXIT_FAILURE);
     }
     std::cout << GREEN << "Successfully accept " << RESET << std::endl;
-    return clientFd; // Return the new socket descriptor for communication with the client.
+    return (clientFd); // Return the new socket descriptor for communication with the client.
 }
 
-// void Server::createNewUser(int fd);
-// {
-//     _users.push_back(new User(fd));
-//     std::cout << BLUE << "new client connected FD:" << fd << RESET << std::endl;
-// }
-
-void Server::removeUser(std::vector<User> &users, int fd)
+void Server::removeUser(int fd)
 {
     // Удаление пользователя из списка пользователей
-    std::vector<User>::iterator itUser = std::find_if(users.begin(), users.end(), FindByFD(fd));
-    if (itUser != users.end())
+    for (std::vector<User *>::iterator it = _users.begin(); it != _users.end(); ++it)
     {
-        itUser->closeSocket();
-        users.erase(itUser);
+        if ((*it)->getFd() == fd)
+        {
+            _users.erase(it);
+            break;
+        }
     }
-    // Удаление файлового дескриптора из _fds
-    std::vector<struct pollfd>::iterator itFd = std::find_if(_fds.begin(), _fds.end(), FindByFD(fd));
-    if (itFd != _fds.end())
-    {
-        _fds.erase(itFd);
-    }
+    // if (itUser != users.end())
+    // {
+    //     itUser->closeSocket();
+    //     users.erase(itUser);
+    // }
+    // // Удаление файлового дескриптора из _fds
+    // std::vector<struct pollfd>::iterator itFd = std::find_if(_fds.begin(), _fds.end(), FindByFD(fd));
+    // if (itFd != _fds.end())
+    // {
+    //     _fds.erase(itFd);
+    // }
 }
 
 //====================================<SIGNALS && SHUTDOWN>====================================
@@ -183,7 +183,7 @@ void Server::removeUser(std::vector<User> &users, int fd)
 // Обработчик для SIGINT
 void Server::sigIntHandler(int signal)
 {
-    std::cout << MAGENTA << "\nReceived SIGINT (Ctrl+C) signal: " << signal << RESET << std::endl;
+    std::cout << "\nReceived SIGINT (Ctrl+C) signal: " << signal << std::endl;
     if (globalServerInstance)
     {
         globalServerInstance->shutdownServer();
@@ -193,7 +193,7 @@ void Server::sigIntHandler(int signal)
 // Обработчик для SIGTERM
 void Server::sigTermHandler(int signal)
 {
-    std::cout << MAGENTA << "\nReceived SIGTERM signal: " << signal << RESET << std::endl;
+    std::cout << "\nReceived SIGTERM signal: " << signal << std::endl;
     if (globalServerInstance)
     {
         globalServerInstance->shutdownServer();
@@ -203,7 +203,7 @@ void Server::sigTermHandler(int signal)
 // Метод для корректного завершения работы сервера
 void Server::shutdownServer()
 {
-    std::cout << CYAN << "Shutting down server..." << RESET << std::endl;
+    std::cout << "Shutting down server..." << std::endl;
     if (globalServerInstance)
     {
         globalServerInstance->_running = false;
@@ -217,7 +217,6 @@ void Server::shutdownServer()
             }
         }
         globalServerInstance->_fds.clear(); // Очистка списка файловых дескрипторов после закрытия всех сокетов
-        std::cout << CYAN << "Server successfully shut down!" << RESET << std::endl;
-
+        std::cout << "Server successfully shut down!" << std::endl;
     }
 }

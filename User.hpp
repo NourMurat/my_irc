@@ -10,7 +10,6 @@ class User
 	private:
 		int			_fd;
 		bool        _isAuth;
-		bool		_isOP;
 		std::string _realname;
 		std::string _nickname;
 		std::string _username;
@@ -22,16 +21,17 @@ class User
 		~User();
 
 		int     				getFd() const;
-		void        			closeSocket();
 		std::string 			getNickname() const;
 		std::string 			getUsername() const;
 		bool 					getIsAuth() const;
+		bool					getIsOP() const;
+		std::deque<std::string> getMessageDeque();
 		void 					setNickname(std::string nickname);
 		void 					setUsername(std::string username);
 		void 					setIsAuth(bool isAuth);
+
 		void					addMessage(std::string msg);
-		std::deque<std::string> getMessageDeque();
-		bool					getIsOP() const;
+		void        			closeSocket();
 		void					setIsOP(bool isOP);
 
 
