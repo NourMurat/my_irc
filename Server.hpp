@@ -9,11 +9,6 @@
 #define CYAN    "\033[36m" 
 #define RESET	"\033[0m"
 
-// #include <poll.h>
-// #include <iostream>
-// #include <sys/socket.h>
-// #include <vector>
-
 #include <vector>
 #include <poll.h>
 #include <fcntl.h>
@@ -29,7 +24,6 @@
 #include "User.hpp"
 #include "signal.h"
 
-// const int PORT = 6666;
 const int MAX_CLIENTS = 4096;
 class User;
 
@@ -38,44 +32,44 @@ extern Server* globalServerInstance; // to use static signal and shutdown functi
 
 class Server
 {
-    private:
-        char            _buffer[4096];
+	private:
+		char            _buffer[4096];
 
-        std::string     _password;
-        int             _port;
-        bool            _running;
+		std::string     _password;
+		int             _port;
+		bool            _running;
 
-    public:
-        Server();
-        Server (const int& port, const std::string& password);
-        ~Server();
+	public:
+		Server();
+		Server (const int& port, const std::string& password);
+		~Server();
 
-        void runServer();
-        int createSocket();
-        void bindSocket(int sockfd);
-        void listenSocket(int sockfd);
-        int acceptConection(int sockfd);
-        void removeUser(std::vector<User>& users, int fd);
+		void				runServer();
+		int					createSocket();
+		void				bindSocket(int sockfd);
+		void				listenSocket(int sockfd);
+		int					acceptConection(int sockfd);
+		void				removeUser(std::vector<User>& users, int fd);
 
-        std::vector<User> _users;
-        std::vector<pollfd> _fds;
-
-        static void sigIntHandler(int signal);
-        static void sigTermHandler(int signal);
-        static void shutdownServer();
+		std::vector<User>	_users;
+		std::vector<pollfd>	_fds;
+		// void				createNewUser(int fd);
+		static void			sigIntHandler(int signal);
+		static void			sigTermHandler(int signal);
+		static void			shutdownServer();
 };
 
 struct FindByFD
 {
-    int fd;
+	int fd;
 
-    FindByFD(int fd) : fd(fd) { }
-    bool operator()(const User &user) const {
-        return user.getFd() == fd;
-    }
-    bool operator()(const struct pollfd& pfd) const {
-        return pfd.fd == fd;
-    }
+	FindByFD(int fd) : fd(fd) { }
+	bool operator()(const User &user) const {
+		return user.getFd() == fd;
+	}
+	bool operator()(const struct pollfd& pfd) const {
+		return pfd.fd == fd;
+	}
 };
 
 #endif

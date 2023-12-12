@@ -153,6 +153,12 @@ int Server::acceptConection(int sockfd)
     return clientFd; // Return the new socket descriptor for communication with the client.
 }
 
+// void Server::createNewUser(int fd);
+// {
+//     _users.push_back(new User(fd));
+//     std::cout << BLUE << "new client connected FD:" << fd << RESET << std::endl;
+// }
+
 void Server::removeUser(std::vector<User> &users, int fd)
 {
     // Удаление пользователя из списка пользователей
