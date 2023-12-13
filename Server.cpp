@@ -63,6 +63,8 @@ void Server::runServer()
                     pollfd tmp2 = {clientFd, POLLIN, 0};
                     _fds.push_back(tmp2);
                     _users.push_back(new User(clientFd));
+                    send(clientFd, "CAP * ACK multi-prefix\r\n", 27, 0);
+                    send(clientFd, "Welcome to the IRC chat!\n", 25, 0);
                     std::cout << BLUE << "new client connected FD:" << clientFd << RESET << std::endl;
                 }
                 else
@@ -70,7 +72,6 @@ void Server::runServer()
                     // Client message received
                     int byteRead = read(_fds[i].fd, _buffer, sizeof(_buffer));
                     _buffer[byteRead - 1] = '\0';
-
                     std::cout << "---------> " << byteRead  << std::endl;
                     if (byteRead <= 0)
                     {
