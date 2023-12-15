@@ -65,18 +65,31 @@ void Server::runServer()
                     int clientFd = acceptConection(sockfd);
                     pollfd tmp2 = {clientFd, POLLIN, 0};
                     _fds.push_back(tmp2);
-                    _users.push_back(User(clientFd));
-                    send(clientFd, "CAP * ACK multi-prefix\r\n", 27, 0);
+                    _users.push_back(new User(clientFd));
+                    std::cout << "User has been created with class User FD:" << _users[i]->getFd() << std::endl;
+
+                    std::string welcomeMsg = "CAP * ACK multi-prefix\r\n";
+                    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
+                    // welcomeMsg = ":IRC 001 Welcome to the Internet Relay Network!\r\n";
+                    // send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
+                    // welcomeMsg = ":IRC 002 Your host is running Irssi: Client: irssi 1.2.2-1ubuntu1.1 (20190829 0225)\r\n";
+                    // send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
+                    // welcomeMsg = ":IRC 003 This server was created November 2023\r\n";
+                    // send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
+                    // welcomeMsg = ":IRC 004 YourServer was created by Reem, NourMurat and German\r\n";
+                    // send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
                     std::cout << BLUE << "new client connected FD:" << clientFd << RESET << std::endl;
                 }
                 else
                 {
                     // Client message received
                     int byteRead = read(_fds[i].fd, _buffer, sizeof(_buffer));
-                    _buffer[byteRead - 1] = '\0';
-
                     std::cout << "---------> " << byteRead << std::endl;
-                    if (byteRead <= 0)
+                    if (byteRead < 0)
+                    {
+                        std::cerr << RED << "Read error on FD:" << _fds[i].fd << RESET << std::endl;
+                    }
+                    else if (byteRead == 0)
                     {
                         std::cout << RED << "Client disconnected FD:" << _fds[i].fd << RESET << std::endl
                                   << std::flush;
@@ -86,11 +99,12 @@ void Server::runServer()
                     }
                     else
                     {
-                        std::vector<User>::iterator it = std::find_if(_users.begin(), _users.end(), FindByFD(_fds[i].fd));
+                        _buffer[byteRead - 1] = '\0';
+                        std::vector<User *>::iterator it = std::find_if(_users.begin(), _users.end(), FindByFD(_fds[i].fd));
 
                         std::string strBuffer(_buffer);
                         std::cout << BLUE << "Received message from client" << _fds[i].fd << ": " << RESET << strBuffer << std::endl;
-                        it->parse(strBuffer);
+                        (*it)->parse(strBuffer);
                     }
                 }
             }
@@ -143,6 +157,7 @@ void Server::listenSocket(int sockfd)
 int Server::acceptConection(int sockfd)
 {
     struct sockaddr_in clientAddr; // hold clientAddr information
+    std::memset(&clientAddr, 0, sizeof(clientAddr));
     socklen_t clientLen = sizeof(clientAddr);
     // int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
     int clientFd = accept(sockfd, (struct sockaddr *)&clientAddr, &clientLen);
@@ -155,13 +170,13 @@ int Server::acceptConection(int sockfd)
     return clientFd; // Return the new socket descriptor for communication with the client.
 }
 
-void Server::removeUser(std::vector<User> &users, int fd)
+void Server::removeUser(std::vector<User *> &users, int fd)
 {
     // Удаление пользователя из списка пользователей
-    std::vector<User>::iterator itUser = std::find_if(users.begin(), users.end(), FindByFD(fd));
+    std::vector<User *>::iterator itUser = std::find_if(users.begin(), users.end(), FindByFD(fd));
     if (itUser != users.end())
     {
-        itUser->closeSocket();
+        (*itUser)->closeSocket();
         users.erase(itUser);
     }
     // Удаление файлового дескриптора из _fds

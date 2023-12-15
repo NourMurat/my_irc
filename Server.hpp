@@ -24,10 +24,11 @@
 #include <algorithm>
 #include <sys/types.h>
 #include <arpa/inet.h> //htons
-#include <arpa/inet.h>
 #include <sys/socket.h>
 #include "User.hpp"
-#include "signal.h"
+#include <csignal>
+
+#include <netinet/in.h>
 
 // const int PORT = 6666;
 const int MAX_CLIENTS = 4096;
@@ -50,8 +51,9 @@ class Server
         Server (const int& port, const std::string& password);
         ~Server();
 
-        std::vector<pollfd>         _fds;
-        std::vector<User>           _users;
+        std::vector<pollfd>             _fds;
+        std::vector<User *>             _users;
+        // std::vector<User>&          getFd();
         // std::map<Channel, Client>   _channels;
 
         void            runServer();
@@ -59,7 +61,7 @@ class Server
         void            bindSocket(int sockfd);
         void            listenSocket(int sockfd);
         int             acceptConection(int sockfd);
-        void            removeUser(std::vector<User>& users, int fd);
+        void            removeUser(std::vector<User *>& users, int fd);
 
         static void     sigIntHandler(int signal);
         static void     sigTermHandler(int signal);
@@ -71,8 +73,8 @@ struct FindByFD
     int fd;
 
     FindByFD(int fd) : fd(fd) { }
-    bool operator()(const User &user) const {
-        return user.getFd() == fd;
+    bool operator()(const User *user) const {
+        return user->getFd() == fd;
     }
     bool operator()(const struct pollfd& pfd) const {
         return pfd.fd == fd;

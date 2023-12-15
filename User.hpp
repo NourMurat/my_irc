@@ -16,7 +16,7 @@ class User
 		std::string _username;
 	public:
 		std::vector<std::string>	incomingmsg;
-		std::vector<std::string>	outgoingmsg;
+		// std::deque<std::string>		outgoingmsg;
 		std::deque<std::string>		messageDeque;
 		User(int fd);
 		~User();

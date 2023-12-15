@@ -67,6 +67,7 @@
         "utility": "cpp",
         "deque": "cpp",
         "__tree": "cpp",
-        "map": "cpp"
+        "map": "cpp",
+        "csignal": "cpp"
     }
 }
