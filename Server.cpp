@@ -2,13 +2,13 @@
 
 Server *globalServerInstance = NULL; // to use static signal and shutdown functions
 
-Server::Server() : _buffer("\0"), _port(0), _running(false)
+Server::Server() : _port(0), _disconnect(true)
 {
     std::cout << GREEN << "Server Default Constructor Called!" << RESET << std::endl;
     globalServerInstance = this;
 }
 
-Server::Server(const int &port, const std::string &password) : _buffer("\0"), _password(password), _port(port), _running(false)
+Server::Server(const int &port, const std::string &password) : _password(password), _port(port), _disconnect(true)
 {
     std::cout << GREEN << "Server Parameter Constructor has called!" << RESET << std::endl;
     globalServerInstance = this;
@@ -24,12 +24,14 @@ Server::~Server()
 
 void Server::runServer()
 {
-    int sockfd = createSocket();
-    int optval = 1;
-
     signal(SIGINT, Server::sigIntHandler);
     signal(SIGTERM, Server::sigTermHandler);
-    _running = true;
+
+    int sockfd = createSocket();
+    bindSocket(sockfd);
+    listenSocket(sockfd);
+
+    int optval = 1;
     if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char *>(&optval), sizeof(optval)) < 0)
     {
         throw std::runtime_error("ERROR! Socket options error!\n");
@@ -39,15 +41,13 @@ void Server::runServer()
         throw std::runtime_error("ERROR! File control error!\n");
     }
 
-    bindSocket(sockfd);
-    listenSocket(sockfd);
-
     pollfd tmp = {sockfd, POLLIN, 0};
     _fds.push_back(tmp);
 
-    while (_running)
+    _disconnect = false;
+    while (!_disconnect)
     {
-        if (!_running)
+        if (_disconnect)
             break;
         // int poll(representing a FD, number of FD, timeout);
         int numFds = poll(_fds.data(), _fds.size(), -1);
@@ -66,45 +66,41 @@ void Server::runServer()
                     pollfd tmp2 = {clientFd, POLLIN, 0};
                     _fds.push_back(tmp2);
                     _users.push_back(new User(clientFd));
-                    std::cout << "User has been created with class User FD:" << _users[i]->getFd() << std::endl;
+                    std::cout << "User has been created with class User FD:" << _users[i]->getFd() << std::endl;// for check create class User
 
                     std::string welcomeMsg = "CAP * ACK multi-prefix\r\n";
                     send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
-                    // welcomeMsg = ":IRC 001 Welcome to the Internet Relay Network!\r\n";
-                    // send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
-                    // welcomeMsg = ":IRC 002 Your host is running Irssi: Client: irssi 1.2.2-1ubuntu1.1 (20190829 0225)\r\n";
-                    // send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
-                    // welcomeMsg = ":IRC 003 This server was created November 2023\r\n";
-                    // send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
-                    // welcomeMsg = ":IRC 004 YourServer was created by Reem, NourMurat and German\r\n";
-                    // send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
+                    welcomeMsg = ": IRC 001 Welcome to the Internet Relay Network!\r\n";
+                    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
+                    welcomeMsg = ": IRC 002 Your host is running Irssi: Client: irssi 1.2.2-1ubuntu1.1 (20190829 0225)\r\n";
+                    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
+                    welcomeMsg = ": IRC 003 This server was created November 2023\r\n";
+                    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
+                    welcomeMsg = ": IRC 004 This Server was created by Reem, NourMurat and German\r\n";
+                    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
                     std::cout << BLUE << "new client connected FD:" << clientFd << RESET << std::endl;
                 }
                 else
                 {
                     // Client message received
-                    int byteRead = read(_fds[i].fd, _buffer, sizeof(_buffer));
+                    int byteRead = _users[i - 1]->receiveMsg(); //read(_fds[i].fd, _buffer, sizeof(_buffer));
                     std::cout << "---------> " << byteRead << std::endl;
                     if (byteRead < 0)
-                    {
                         std::cerr << RED << "Read error on FD:" << _fds[i].fd << RESET << std::endl;
-                    }
-                    else if (byteRead == 0)
-                    {
+                    else if (byteRead == 0) {
                         std::cout << RED << "Client disconnected FD:" << _fds[i].fd << RESET << std::endl
                                   << std::flush;
                         removeUser(_users, _fds[i].fd);
-                        _fds.erase(_fds.begin() + i);
+                        // _fds.erase(_fds.begin() + i);
                         i--;
                     }
-                    else
-                    {
-                        _buffer[byteRead - 1] = '\0';
+                    else {
+                        // _buffer[byteRead - 1] = '\0';
                         std::vector<User *>::iterator it = std::find_if(_users.begin(), _users.end(), FindByFD(_fds[i].fd));
 
-                        std::string strBuffer(_buffer);
-                        std::cout << BLUE << "Received message from client" << _fds[i].fd << ": " << RESET << strBuffer << std::endl;
-                        (*it)->parse(strBuffer);
+                        // std::string strBuffer(_buffer);
+                        std::cout << BLUE << "Received message from client" << _fds[i].fd << ":\n" << RESET << (*it)->getBuffer() << std::endl;
+                        (*it)->parse(_users[i - 1]->_incomingMsgs[0]);
                     }
                 }
             }
@@ -187,12 +183,15 @@ void Server::removeUser(std::vector<User *> &users, int fd)
     }
 }
 
+
+
+
 //====================================<SIGNALS && SHUTDOWN>====================================
 
 // Обработчик для SIGINT
 void Server::sigIntHandler(int signal)
 {
-    std::cout << MAGENTA << "\nReceived SIGINT (Ctrl+C) signal: " << signal << RESET << std::endl;
+    std::cout << YELLOW << "\nReceived SIGINT (Ctrl+C) signal: " << signal << RESET << std::endl;
     if (globalServerInstance)
     {
         globalServerInstance->shutdownServer();
@@ -202,7 +201,7 @@ void Server::sigIntHandler(int signal)
 // Обработчик для SIGTERM
 void Server::sigTermHandler(int signal)
 {
-    std::cout << MAGENTA << "\nReceived SIGTERM signal: " << signal << RESET << std::endl;
+    std::cout << YELLOW << "\nReceived SIGTERM signal: " << signal << RESET << std::endl;
     if (globalServerInstance)
     {
         globalServerInstance->shutdownServer();
@@ -215,7 +214,7 @@ void Server::shutdownServer()
     std::cout << CYAN << "Shutting down server..." << RESET << std::endl;
     if (globalServerInstance)
     {
-        globalServerInstance->_running = false;
+        globalServerInstance->_disconnect = true;
         for (std::vector<struct pollfd>::iterator it = globalServerInstance->_fds.begin(); it != globalServerInstance->_fds.end(); ++it)
         {
             // Закрытие каждого сокета в _fds

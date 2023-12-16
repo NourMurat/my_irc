@@ -1,30 +1,84 @@
 #include "User.hpp"
+#include "Server.hpp"
 
-User::User(int fd) : _fd(fd)
-{
+User::User(int fd) : _fd(fd) {
     this->_isAuth = false;
     this->_isOP = false;
+    this->_buffer = "";
     this->_nickname = "";
     this->_username = "";
     this->_realname = "";
 }
 
-User::~User()
-{
-    this->incomingmsg.clear();
-    this->outgoingmsg.clear();
+User::~User() {
+    this->_incomingMsgs.clear();
+    // this->outgoingmsg.clear();
     closeSocket();
 }
 
-void User::addMessage(std::string msg)
-{
-    this->incomingmsg.push_back(msg);
+//==============================================================================================
+
+size_t      User::receiveMsg() {
+    char buffer[4096]; // Create a buffer to store incoming data
+    size_t bytesRead = recv(_fd, buffer, sizeof(buffer) - 1, 0); // Read data from the socket
+
+    if (bytesRead <= 0) {
+        return bytesRead; // If no data or an error, return the number of bytes read
+    }
+
+    buffer[bytesRead] = '\0'; // Add a null terminator at the end of the string
+
+    _buffer.clear();
+    _buffer = buffer; // Save the read data in the class variable
+
+    // Process the read data
+    splitAndProcess(_buffer);
+    return bytesRead; // Return the number of bytes read
 }
 
-std::deque<std::string> User::getMessageDeque()
-{
-    return (this->messageDeque);
+void        User::splitAndProcess(const std::string& data) {
+    std::string::size_type start = 0; // Start position for search
+    std::string::size_type end; // End position for search
+
+    _incomingMsgs.clear();
+    // Loop to find and process substrings separated by "\r\n"
+    while ((end = data.find("\r\n", start)) != std::string::npos) {
+        std::string fragment = data.substr(start, end - start); // Extract the substring
+
+        std::istringstream iss(fragment); // Use stringstream to split by spaces
+        std::string word;
+
+        // Split the substring into words
+        while (iss >> word) {
+            _incomingMsgs.push_back(word); // Add words to the _incomingMsgs
+        }
+
+        start = end + 2; // Skip the "\r\n" characters for the next search
+    }
+
+    // Process the last fragment after the last "\r\n"
+    if (start < data.length()) {
+        std::istringstream iss(data.substr(start));
+        std::string word;
+
+        while (iss >> word) {
+            _incomingMsgs.push_back(word); // Add remaining words
+        }
+    }
+
 }
+
+//---------------------------------------------------------------------------------------------
+
+void User::addMessage(std::string msg)
+{
+    this->_incomingMsgs.push_back(msg);
+}
+
+// std::deque<std::string> User::getMessageDeque()
+// {
+//     return (this->messageDeque);
+// }
 
 int User::getFd() const
 {
@@ -87,4 +141,8 @@ void User::closeSocket()
 void User::parse(std::string msg)
 {
     (void)msg;
+}
+
+std::string     User::getBuffer() {
+    return _buffer;
 }

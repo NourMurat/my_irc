@@ -40,11 +40,11 @@ extern Server* globalServerInstance; // to use static signal and shutdown functi
 class Server
 {
     private:
-        char            _buffer[4096];
+        // char            _buffer[4096];
 
         std::string     _password;
         int             _port;
-        bool            _running;
+        bool            _disconnect;
 
     public:
         Server();
