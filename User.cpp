@@ -100,27 +100,17 @@ bool User::getIsAuth() const
     return (_isAuth);
 }
 
-bool User::getIsOP() const
-{
-    return (_isOP);
-}
-
-void User::setIsOP(bool isOP)
-{
-    this->_isOP = isOP;
-}
-
 void User::setNickname(std::string nickname)
 {
     if (nickname.length() > 9)
-        nickname = nickname.substr(0, 9) + ".";
+        nickname = nickname.substr(0, 8) + ".";
     this->_nickname = nickname;
 }
 
 void User::setUsername(std::string username)
 {
     if (username.length() > 9)
-        username = username.substr(0, 9) + ".";
+        username = username.substr(0, 8) + ".";
     this->_username = username;
 }
 

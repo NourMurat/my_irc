@@ -10,14 +10,13 @@ Server::Server() : _port(0), _disconnect(true)
 
 Server::Server(const int &port, const std::string &password) : _password(password), _port(port), _disconnect(true)
 {
-    std::cout << GREEN << "Server Parameter Constructor has called!" << RESET << std::endl;
     globalServerInstance = this;
 }
 
 Server::~Server()
 {
     std::cout << RED << "Server Destructor Called" << RESET << std::endl;
-    // shutdownServer();
+    shutdownServer();
 }
 
 //===============================<START>========================================================
@@ -104,6 +103,8 @@ void Server::runServer()
                     }
                 }
             }
+            if (!_running)
+                break;
         }
     }
 }
@@ -156,6 +157,7 @@ int Server::acceptConection(int sockfd)
     std::memset(&clientAddr, 0, sizeof(clientAddr));
     socklen_t clientLen = sizeof(clientAddr);
     // int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+ 
     int clientFd = accept(sockfd, (struct sockaddr *)&clientAddr, &clientLen);
     if (clientFd == -1)
     {
@@ -163,7 +165,7 @@ int Server::acceptConection(int sockfd)
         exit(EXIT_FAILURE);
     }
     std::cout << GREEN << "Successfully accept " << RESET << std::endl;
-    return clientFd; // Return the new socket descriptor for communication with the client.
+    return (clientFd); // Return the new socket descriptor for communication with the client.
 }
 
 void Server::removeUser(std::vector<User *> &users, int fd)
@@ -179,8 +181,23 @@ void Server::removeUser(std::vector<User *> &users, int fd)
     std::vector<struct pollfd>::iterator itFd = std::find_if(_fds.begin(), _fds.end(), FindByFD(fd));
     if (itFd != _fds.end())
     {
-        _fds.erase(itFd);
+        if ((*it)->getFd() == fd)
+        {
+            _users.erase(it);
+            break;
+        }
     }
+    // if (itUser != users.end())
+    // {
+    //     itUser->closeSocket();
+    //     users.erase(itUser);
+    // }
+    // // Удаление файлового дескриптора из _fds
+    // std::vector<struct pollfd>::iterator itFd = std::find_if(_fds.begin(), _fds.end(), FindByFD(fd));
+    // if (itFd != _fds.end())
+    // {
+    //     _fds.erase(itFd);
+    // }
 }
 
 
@@ -211,7 +228,7 @@ void Server::sigTermHandler(int signal)
 // Метод для корректного завершения работы сервера
 void Server::shutdownServer()
 {
-    std::cout << CYAN << "Shutting down server..." << RESET << std::endl;
+    std::cout << "Shutting down server..." << std::endl;
     if (globalServerInstance)
     {
         globalServerInstance->_disconnect = true;
@@ -225,7 +242,6 @@ void Server::shutdownServer()
             }
         }
         globalServerInstance->_fds.clear(); // Очистка списка файловых дескрипторов после закрытия всех сокетов
-        std::cout << CYAN << "Server successfully shut down!" << RESET << std::endl;
-
+        std::cout << "Server successfully shut down!" << std::endl;
     }
 }

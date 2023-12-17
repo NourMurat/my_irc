@@ -43,11 +43,11 @@ std::map<char, bool> Channel::getMode() const
 
 void Channel::setName(std::string name)
 {
-    if (name.find_first_of(" \a\b\f\n\r\t\v") != std::string::npos)
-        throw (std::invalid_argument("Invalid channel name"));
-    else if (name[0] != '#' || name[0] != '&')
-        throw (std::invalid_argument("Channel must start with \'#\' or \'&\'"));
-    else
+    // if (name.find_first_of(" \a\b\f\n\r\t\v") != std::string::npos)
+    //     throw (std::invalid_argument("Invalid channel name"));
+    // else if (name[0] != '#' || name[0] != '&')
+    //     throw (std::invalid_argument("Channel must start with \'#\' or \'&\'"));
+    // else
         this->_name = name;
 }
 

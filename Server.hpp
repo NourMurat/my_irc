@@ -9,11 +9,6 @@
 #define CYAN    "\033[36m" 
 #define RESET	"\033[0m"
 
-// #include <poll.h>
-// #include <iostream>
-// #include <sys/socket.h>
-// #include <vector>
-
 #include <vector>
 #include <poll.h>
 #include <fcntl.h>
@@ -30,7 +25,6 @@
 
 #include <netinet/in.h>
 
-// const int PORT = 6666;
 const int MAX_CLIENTS = 4096;
 class User;
 
@@ -46,10 +40,9 @@ class Server
         int             _port;
         bool            _disconnect;
 
-    public:
-        Server();
-        Server (const int& port, const std::string& password);
-        ~Server();
+		std::string     _password;
+		int             _port;
+		bool            _running;
 
         std::vector<pollfd>             _fds;
         std::vector<User *>             _users;
@@ -63,14 +56,17 @@ class Server
         int             acceptConection(int sockfd);
         void            removeUser(std::vector<User *>& users, int fd);
 
-        static void     sigIntHandler(int signal);
-        static void     sigTermHandler(int signal);
-        static void     shutdownServer();
+		std::vector<User *>	_users;
+		std::vector<pollfd>	_fds;
+		void				createNewUser(int fd);
+		static void			sigIntHandler(int signal);
+		static void			sigTermHandler(int signal);
+		static void			shutdownServer();
 };
 
 struct FindByFD
 {
-    int fd;
+	int fd;
 
     FindByFD(int fd) : fd(fd) { }
     bool operator()(const User *user) const {

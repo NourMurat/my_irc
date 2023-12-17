@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string>
 #include <map>
+#include <exception>
 
 class Channel
 {
