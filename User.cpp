@@ -20,20 +20,20 @@ User::~User() {
 
 size_t      User::receiveMsg() {
     char buffer[4096]; // Create a buffer to store incoming data
-    size_t bytesRead = recv(_fd, buffer, sizeof(buffer) - 1, 0); // Read data from the socket
+    size_t byteRead = read(_fd, buffer, sizeof(buffer)); // Read data from the socket
 
-    if (bytesRead <= 0) {
-        return bytesRead; // If no data or an error, return the number of bytes read
+    if (byteRead <= 0) {
+        return byteRead; // If no data or an error, return the number of bytes read
     }
 
-    buffer[bytesRead] = '\0'; // Add a null terminator at the end of the string
+    buffer[byteRead] = '\0'; // Add a null terminator at the end of the string
 
     _buffer.clear();
     _buffer = buffer; // Save the read data in the class variable
 
     // Process the read data
     splitAndProcess(_buffer);
-    return bytesRead; // Return the number of bytes read
+    return byteRead; // Return the number of bytes read
 }
 
 void        User::splitAndProcess(const std::string& data) {
@@ -56,16 +56,15 @@ void        User::splitAndProcess(const std::string& data) {
         start = end + 2; // Skip the "\r\n" characters for the next search
     }
 
-    // Process the last fragment after the last "\r\n"
+    // Process the last fragment after the last "\r\n" or if the string haven`t "\r\n"
     if (start < data.length()) {
         std::istringstream iss(data.substr(start));
         std::string word;
 
         while (iss >> word) {
-            _incomingMsgs.push_back(word); // Add remaining words
+            _incomingMsgs.push_back(word);
         }
     }
-
 }
 
 //---------------------------------------------------------------------------------------------
@@ -100,27 +99,17 @@ bool User::getIsAuth() const
     return (_isAuth);
 }
 
-bool User::getIsOP() const
-{
-    return (_isOP);
-}
-
-void User::setIsOP(bool isOP)
-{
-    this->_isOP = isOP;
-}
-
 void User::setNickname(std::string nickname)
 {
     if (nickname.length() > 9)
-        nickname = nickname.substr(0, 9) + ".";
+        nickname = nickname.substr(0, 8) + ".";
     this->_nickname = nickname;
 }
 
 void User::setUsername(std::string username)
 {
     if (username.length() > 9)
-        username = username.substr(0, 9) + ".";
+        username = username.substr(0, 8) + ".";
     this->_username = username;
 }
 

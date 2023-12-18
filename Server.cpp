@@ -16,7 +16,7 @@ Server::Server(const int &port, const std::string &password) : _password(passwor
 
 Server::~Server()
 {
-    std::cout << RED << "Server Destructor Called" << RESET << std::endl;
+    std::cout << GREEN << "Server Destructor Called" << RESET << std::endl;
     // shutdownServer();
 }
 
@@ -95,12 +95,36 @@ void Server::runServer()
                         i--;
                     }
                     else {
-                        // _buffer[byteRead - 1] = '\0';
                         std::vector<User *>::iterator it = std::find_if(_users.begin(), _users.end(), FindByFD(_fds[i].fd));
-
-                        // std::string strBuffer(_buffer);
                         std::cout << BLUE << "Received message from client" << _fds[i].fd << ":\n" << RESET << (*it)->getBuffer() << std::endl;
-                        (*it)->parse(_users[i - 1]->_incomingMsgs[0]);
+                        (*it)->parse((*it)->_incomingMsgs[0]);
+                        // for (size_t i = 0; i < (*it)->_incomingMsgs.size(); ++i)
+                        //     std::cout << i << ": " << (*it)->_incomingMsgs[i] << std::endl; //debugging
+                        if (!(*it)->getIsAuth()) {
+                            for (size_t i = 0; i < (*it)->_incomingMsgs.size(); ++i) {
+                                if ((*it)->_incomingMsgs[i] == "PASS") 
+                                    _password = (*it)->_incomingMsgs[i + 1];
+                                if ((*it)->_incomingMsgs[i] == "NICK") {
+                                    (*it)->setNickname((*it)->_incomingMsgs[i + 1]);
+                                }
+                                if ((*it)->_incomingMsgs[i] == "USER") {
+                                    (*it)->setUsername((*it)->_incomingMsgs[i + 3]);
+                                }
+                            }
+                            std::cout << _password << "\n";
+                            std::cout << (*it)->getNickname() << "\n";
+                            std::cout << (*it)->getUsername() << "\n";
+                            (*it)->setIsAuth(true);
+                            // sendWelcomeMessages((*it)->getFd());
+                            std::string welcomeMsg = ": IRC 001 Welcome to the Internet Relay Network <nick>!<user>@<host>\r\n";
+                            send((*it)->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
+                            welcomeMsg = ": IRC 002 Your host is <servername>, running version <ver>\r\n";
+                            send((*it)->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
+                            welcomeMsg = ": IRC 003 This server was created December 2023\r\n";
+                            send((*it)->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
+                            welcomeMsg = ": IRC 004 <servername> <version> <available user modes> <available channel modes>\r\n";
+                            send((*it)->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
+                        }
                     }
                 }
             }
@@ -182,9 +206,6 @@ void Server::removeUser(std::vector<User *> &users, int fd)
         _fds.erase(itFd);
     }
 }
-
-
-
 
 //====================================<SIGNALS && SHUTDOWN>====================================
 
