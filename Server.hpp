@@ -40,21 +40,19 @@ class Server
         int             _port;
         bool            _disconnect;
 
-		std::string     _password;
-		int             _port;
-		bool            _running;
 
-        std::vector<pollfd>             _fds;
-        std::vector<User *>             _users;
-        // std::vector<User>&          getFd();
-        // std::map<Channel, Client>   _channels;
+	public:
+		Server();
+		Server (const int& port, const std::string& password);
+		~Server();
 
-        void            runServer();
-        int             createSocket();
-        void            bindSocket(int sockfd);
-        void            listenSocket(int sockfd);
-        int             acceptConection(int sockfd);
-        void            removeUser(std::vector<User *>& users, int fd);
+		void 				runServer();
+		int 				createSocket();
+		void				bindSocket(int sockfd);
+		void				listenSocket(int sockfd);
+		int					acceptConection(int sockfd);
+		void				removeUser(std::vector<User *>& users, int fd);
+		void	removeUser(int fd);
 
 		std::vector<User *>	_users;
 		std::vector<pollfd>	_fds;

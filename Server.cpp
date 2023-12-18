@@ -10,13 +10,14 @@ Server::Server() : _port(0), _disconnect(true)
 
 Server::Server(const int &port, const std::string &password) : _password(password), _port(port), _disconnect(true)
 {
+    std::cout << GREEN << "Server Parameter Constructor has called!" << RESET << std::endl;
     globalServerInstance = this;
 }
 
 Server::~Server()
 {
-    std::cout << RED << "Server Destructor Called" << RESET << std::endl;
-    shutdownServer();
+    std::cout << GREEN << "Server Destructor Called" << RESET << std::endl;
+    // shutdownServer();
 }
 
 //===============================<START>========================================================
@@ -65,18 +66,11 @@ void Server::runServer()
                     pollfd tmp2 = {clientFd, POLLIN, 0};
                     _fds.push_back(tmp2);
                     _users.push_back(new User(clientFd));
-                    std::cout << "User has been created with class User FD:" << _users[i]->getFd() << std::endl;// for check create class User
+                    // std::cout << "User has been created with class User FD:" << _users[i]->getFd() << std::endl;// for check create class User
 
                     std::string welcomeMsg = "CAP * ACK multi-prefix\r\n";
                     send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
-                    welcomeMsg = ": IRC 001 Welcome to the Internet Relay Network!\r\n";
-                    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
-                    welcomeMsg = ": IRC 002 Your host is running Irssi: Client: irssi 1.2.2-1ubuntu1.1 (20190829 0225)\r\n";
-                    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
-                    welcomeMsg = ": IRC 003 This server was created November 2023\r\n";
-                    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
-                    welcomeMsg = ": IRC 004 This Server was created by Reem, NourMurat and German\r\n";
-                    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
+
                     std::cout << BLUE << "new client connected FD:" << clientFd << RESET << std::endl;
                 }
                 else
@@ -94,17 +88,39 @@ void Server::runServer()
                         i--;
                     }
                     else {
-                        // _buffer[byteRead - 1] = '\0';
                         std::vector<User *>::iterator it = std::find_if(_users.begin(), _users.end(), FindByFD(_fds[i].fd));
-
-                        // std::string strBuffer(_buffer);
                         std::cout << BLUE << "Received message from client" << _fds[i].fd << ":\n" << RESET << (*it)->getBuffer() << std::endl;
-                        (*it)->parse(_users[i - 1]->_incomingMsgs[0]);
+                        (*it)->parse((*it)->_incomingMsgs[0]);
+                        // for (size_t i = 0; i < (*it)->_incomingMsgs.size(); ++i)
+                        //     std::cout << i << ": " << (*it)->_incomingMsgs[i] << std::endl; //debugging
+                        if (!(*it)->getIsAuth()) {
+                            for (size_t i = 0; i < (*it)->_incomingMsgs.size(); ++i) {
+                                if ((*it)->_incomingMsgs[i] == "PASS") 
+                                    _password = (*it)->_incomingMsgs[i + 1];
+                                if ((*it)->_incomingMsgs[i] == "NICK") {
+                                    (*it)->setNickname((*it)->_incomingMsgs[i + 1]);
+                                }
+                                if ((*it)->_incomingMsgs[i] == "USER") {
+                                    (*it)->setUsername((*it)->_incomingMsgs[i + 3]);
+                                }
+                            }
+                            std::cout << _password << "\n";
+                            std::cout << (*it)->getNickname() << "\n";
+                            std::cout << (*it)->getUsername() << "\n";
+                            (*it)->setIsAuth(true);
+                            // sendWelcomeMessages((*it)->getFd());
+                            std::string welcomeMsg = ": IRC 001 Welcome to the Internet Relay Network <nick>!<user>@<host>\r\n";
+                            send((*it)->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
+                            welcomeMsg = ": IRC 002 Your host is <servername>, running version <ver>\r\n";
+                            send((*it)->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
+                            welcomeMsg = ": IRC 003 This server was created December 2023\r\n";
+                            send((*it)->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
+                            welcomeMsg = ": IRC 004 <servername> <version> <available user modes> <available channel modes>\r\n";
+                            send((*it)->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
+                        }
                     }
                 }
             }
-            if (!_running)
-                break;
         }
     }
 }
@@ -157,7 +173,6 @@ int Server::acceptConection(int sockfd)
     std::memset(&clientAddr, 0, sizeof(clientAddr));
     socklen_t clientLen = sizeof(clientAddr);
     // int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
- 
     int clientFd = accept(sockfd, (struct sockaddr *)&clientAddr, &clientLen);
     if (clientFd == -1)
     {
@@ -165,7 +180,7 @@ int Server::acceptConection(int sockfd)
         exit(EXIT_FAILURE);
     }
     std::cout << GREEN << "Successfully accept " << RESET << std::endl;
-    return (clientFd); // Return the new socket descriptor for communication with the client.
+    return clientFd; // Return the new socket descriptor for communication with the client.
 }
 
 void Server::removeUser(std::vector<User *> &users, int fd)
@@ -181,27 +196,9 @@ void Server::removeUser(std::vector<User *> &users, int fd)
     std::vector<struct pollfd>::iterator itFd = std::find_if(_fds.begin(), _fds.end(), FindByFD(fd));
     if (itFd != _fds.end())
     {
-        if ((*it)->getFd() == fd)
-        {
-            _users.erase(it);
-            break;
-        }
+        _fds.erase(itFd);
     }
-    // if (itUser != users.end())
-    // {
-    //     itUser->closeSocket();
-    //     users.erase(itUser);
-    // }
-    // // Удаление файлового дескриптора из _fds
-    // std::vector<struct pollfd>::iterator itFd = std::find_if(_fds.begin(), _fds.end(), FindByFD(fd));
-    // if (itFd != _fds.end())
-    // {
-    //     _fds.erase(itFd);
-    // }
 }
-
-
-
 
 //====================================<SIGNALS && SHUTDOWN>====================================
 
@@ -228,7 +225,7 @@ void Server::sigTermHandler(int signal)
 // Метод для корректного завершения работы сервера
 void Server::shutdownServer()
 {
-    std::cout << "Shutting down server..." << std::endl;
+    std::cout << CYAN << "Shutting down server..." << RESET << std::endl;
     if (globalServerInstance)
     {
         globalServerInstance->_disconnect = true;
@@ -242,6 +239,7 @@ void Server::shutdownServer()
             }
         }
         globalServerInstance->_fds.clear(); // Очистка списка файловых дескрипторов после закрытия всех сокетов
-        std::cout << "Server successfully shut down!" << std::endl;
+        std::cout << CYAN << "Server successfully shut down!" << RESET << std::endl;
+
     }
 }
