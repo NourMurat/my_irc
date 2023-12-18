@@ -25,8 +25,7 @@ Server::~Server()
 static void welcomeMsg(int clientFd)
 {
 
-    std::string welcomeMsg = "CAP * ACK multi-prefix\r\n";
-    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
+    std::string welcomeMsg;
     welcomeMsg = ": IRC 001 Welcome to the Internet Relay Network!\r\n";
     send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
     welcomeMsg = ": IRC 002 Your host is running Irssi: Client: irssi 1.2.2-1ubuntu1.1 (20190829 0225)\r\n";
@@ -78,7 +77,8 @@ void Server::runServer()
                     _fds.push_back(tmp2);
                     _users.push_back(new User(clientFd));
                     std::cout << "User has been created with class User FD:" << _users[i]->getFd() << std::endl;// for check create class User
-                    welcomeMsg(clientFd);
+                    std::string welcomeMsg = "CAP * ACK multi-prefix\r\n";
+                    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
                 }
                 else
                 {
@@ -100,10 +100,9 @@ void Server::runServer()
                         (*it)->parse((*it)->_incomingMsgs[0]);
                         // for (size_t i = 0; i < (*it)->_incomingMsgs.size(); ++i)
                         //     std::cout << i << ": " << (*it)->_incomingMsgs[i] << std::endl; //debugging
-                        if (!(*it)->getIsAuth()) {
+                        if (!(*it)->getIsAuth() || (*it)->getNickname().empty() || (*it)->getUsername().empty())
+                        {
                             for (size_t i = 0; i < (*it)->_incomingMsgs.size(); ++i) {
-                                if ((*it)->_incomingMsgs[i] == "PASS") 
-                                    _password = (*it)->_incomingMsgs[i + 1];
                                 if ((*it)->_incomingMsgs[i] == "NICK") {
                                     (*it)->setNickname((*it)->_incomingMsgs[i + 1]);
                                 }
@@ -111,19 +110,18 @@ void Server::runServer()
                                     (*it)->setUsername((*it)->_incomingMsgs[i + 3]);
                                 }
                             }
+                            if (!(*it)->getIsAuth())
+                            {
+                                welcomeMsg((*it)->getFd());
+                                (*it)->setIsAuth(true);
+                            }
                             std::cout << _password << "\n";
                             std::cout << (*it)->getNickname() << "\n";
                             std::cout << (*it)->getUsername() << "\n";
+                            
                             (*it)->setIsAuth(true);
                             // sendWelcomeMessages((*it)->getFd());
-                            std::string welcomeMsg = ": IRC 001 Welcome to the Internet Relay Network <nick>!<user>@<host>\r\n";
-                            send((*it)->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
-                            welcomeMsg = ": IRC 002 Your host is <servername>, running version <ver>\r\n";
-                            send((*it)->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
-                            welcomeMsg = ": IRC 003 This server was created December 2023\r\n";
-                            send((*it)->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
-                            welcomeMsg = ": IRC 004 <servername> <version> <available user modes> <available channel modes>\r\n";
-                            send((*it)->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
+
                         }
                     }
                 }
