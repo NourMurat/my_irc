@@ -22,25 +22,36 @@ Server::~Server()
 
 //===============================<START>========================================================
 
+static void welcomeMsg(int clientFd)
+{
+
+    std::string welcomeMsg = "CAP * ACK multi-prefix\r\n";
+    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
+    welcomeMsg = ": IRC 001 Welcome to the Internet Relay Network!\r\n";
+    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
+    welcomeMsg = ": IRC 002 Your host is running Irssi: Client: irssi 1.2.2-1ubuntu1.1 (20190829 0225)\r\n";
+    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
+    welcomeMsg = ": IRC 003 This server was created November 2023\r\n";
+    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
+    welcomeMsg = ": IRC 004 This Server was created by Reem, NourMurat and German\r\n";
+    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
+    std::cout << BLUE << "new client connected FD:" << clientFd << RESET << std::endl;
+}
+
 void Server::runServer()
 {
+    int optval = 1;
+    int sockfd = createSocket();
+
     signal(SIGINT, Server::sigIntHandler);
     signal(SIGTERM, Server::sigTermHandler);
-
-    int sockfd = createSocket();
     bindSocket(sockfd);
     listenSocket(sockfd);
 
-    int optval = 1;
     if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char *>(&optval), sizeof(optval)) < 0)
-    {
         throw std::runtime_error("ERROR! Socket options error!\n");
-    }
     if (fcntl(sockfd, F_SETFL, O_NONBLOCK) < 0)
-    {
         throw std::runtime_error("ERROR! File control error!\n");
-    }
-
     pollfd tmp = {sockfd, POLLIN, 0};
     _fds.push_back(tmp);
 
@@ -67,18 +78,7 @@ void Server::runServer()
                     _fds.push_back(tmp2);
                     _users.push_back(new User(clientFd));
                     std::cout << "User has been created with class User FD:" << _users[i]->getFd() << std::endl;// for check create class User
-
-                    std::string welcomeMsg = "CAP * ACK multi-prefix\r\n";
-                    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
-                    welcomeMsg = ": IRC 001 Welcome to the Internet Relay Network!\r\n";
-                    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
-                    welcomeMsg = ": IRC 002 Your host is running Irssi: Client: irssi 1.2.2-1ubuntu1.1 (20190829 0225)\r\n";
-                    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
-                    welcomeMsg = ": IRC 003 This server was created November 2023\r\n";
-                    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
-                    welcomeMsg = ": IRC 004 This Server was created by Reem, NourMurat and German\r\n";
-                    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
-                    std::cout << BLUE << "new client connected FD:" << clientFd << RESET << std::endl;
+                    welcomeMsg(clientFd);
                 }
                 else
                 {

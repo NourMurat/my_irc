@@ -30,11 +30,11 @@
 
 #include <netinet/in.h>
 
-// const int PORT = 6666;
 const int MAX_CLIENTS = 4096;
-class User;
 
+class User;
 class Server;
+
 extern Server* globalServerInstance; // to use static signal and shutdown functions
 
 class Server
@@ -55,7 +55,7 @@ class Server
         std::vector<User *>             _users;
         // std::vector<User>&          getFd();
         // std::map<Channel, Client>   _channels;
-
+        bool            authenticate_user(int i);
         void            runServer();
         int             createSocket();
         void            bindSocket(int sockfd);
