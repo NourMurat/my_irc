@@ -121,6 +121,13 @@ void Server::runServer()
                     }
                 }
             }
+            // The connection was closed with the other side
+            else if ((_fds[i].revents & POLLHUP) == POLLHUP)
+            {
+                std::cout << RED << "Client has disconnected FD:" << _fds[i].fd << RESET << std::endl;
+                removeUser(_users, _fds[i].fd);
+                break;
+            }
         }
     }
 }
@@ -191,6 +198,7 @@ void Server::removeUser(std::vector<User *> &users, int fd)
     {
         (*itUser)->closeSocket();
         users.erase(itUser);
+        delete *itUser;
     }
     // Удаление файлового дескриптора из _fds
     std::vector<struct pollfd>::iterator itFd = std::find_if(_fds.begin(), _fds.end(), FindByFD(fd));
