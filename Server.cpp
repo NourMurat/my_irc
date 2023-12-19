@@ -22,25 +22,35 @@ Server::~Server()
 
 //===============================<START>========================================================
 
+static void welcomeMsg(int clientFd)
+{
+    std::string welcomeMsg;
+    welcomeMsg = ": IRC 001 Welcome to the Internet Relay Network <nick>!<user>@<host>\r\n";
+    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
+    welcomeMsg = ": IRC 002 Your host is <servername>, running version <ver>\r\n";
+    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
+    welcomeMsg = ": IRC 003 This server was created December 2023\r\n";
+    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
+    welcomeMsg = ": IRC 004 <servername> <version> <available user modes> <available channel modes>\r\n";
+    send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
+    
+    std::cout << BLUE << "new client connected FD:" << clientFd << RESET << std::endl;
+}
+
 void Server::runServer()
 {
+    int optval = 1;
+    int sockfd = createSocket();
+
     signal(SIGINT, Server::sigIntHandler);
     signal(SIGTERM, Server::sigTermHandler);
-
-    int sockfd = createSocket();
     bindSocket(sockfd);
     listenSocket(sockfd);
 
-    int optval = 1;
     if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char *>(&optval), sizeof(optval)) < 0)
-    {
         throw std::runtime_error("ERROR! Socket options error!\n");
-    }
     if (fcntl(sockfd, F_SETFL, O_NONBLOCK) < 0)
-    {
         throw std::runtime_error("ERROR! File control error!\n");
-    }
-
     pollfd tmp = {sockfd, POLLIN, 0};
     _fds.push_back(tmp);
 
@@ -66,12 +76,9 @@ void Server::runServer()
                     pollfd tmp2 = {clientFd, POLLIN, 0};
                     _fds.push_back(tmp2);
                     _users.push_back(new User(clientFd));
-                    // std::cout << "User has been created with class User FD:" << _users[i]->getFd() << std::endl;// for check create class User
-
+                    std::cout << "User has been created with class User FD:" << _users[i]->getFd() << std::endl;// for check create class User
                     std::string welcomeMsg = "CAP * ACK multi-prefix\r\n";
                     send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
-
-                    std::cout << BLUE << "new client connected FD:" << clientFd << RESET << std::endl;
                 }
                 else
                 {
@@ -93,10 +100,9 @@ void Server::runServer()
                         (*it)->parse((*it)->_incomingMsgs[0]);
                         // for (size_t i = 0; i < (*it)->_incomingMsgs.size(); ++i)
                         //     std::cout << i << ": " << (*it)->_incomingMsgs[i] << std::endl; //debugging
-                        if (!(*it)->getIsAuth()) {
+                        if (!(*it)->getIsAuth() || (*it)->getNickname().empty() || (*it)->getUsername().empty())
+                        {
                             for (size_t i = 0; i < (*it)->_incomingMsgs.size(); ++i) {
-                                if ((*it)->_incomingMsgs[i] == "PASS") 
-                                    _password = (*it)->_incomingMsgs[i + 1];
                                 if ((*it)->_incomingMsgs[i] == "NICK") {
                                     (*it)->setNickname((*it)->_incomingMsgs[i + 1]);
                                 }
@@ -104,19 +110,18 @@ void Server::runServer()
                                     (*it)->setUsername((*it)->_incomingMsgs[i + 3]);
                                 }
                             }
+                            if (!(*it)->getIsAuth())
+                            {
+                                welcomeMsg((*it)->getFd());
+                                (*it)->setIsAuth(true);
+                            }
                             std::cout << _password << "\n";
                             std::cout << (*it)->getNickname() << "\n";
                             std::cout << (*it)->getUsername() << "\n";
+                            
                             (*it)->setIsAuth(true);
                             // sendWelcomeMessages((*it)->getFd());
-                            std::string welcomeMsg = ": IRC 001 Welcome to the Internet Relay Network <nick>!<user>@<host>\r\n";
-                            send((*it)->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
-                            welcomeMsg = ": IRC 002 Your host is <servername>, running version <ver>\r\n";
-                            send((*it)->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
-                            welcomeMsg = ": IRC 003 This server was created December 2023\r\n";
-                            send((*it)->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
-                            welcomeMsg = ": IRC 004 <servername> <version> <available user modes> <available channel modes>\r\n";
-                            send((*it)->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
+
                         }
                     }
                 }

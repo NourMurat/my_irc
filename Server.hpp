@@ -26,9 +26,10 @@
 #include <netinet/in.h>
 
 const int MAX_CLIENTS = 4096;
-class User;
 
+class User;
 class Server;
+
 extern Server* globalServerInstance; // to use static signal and shutdown functions
 
 class Server
