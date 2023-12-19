@@ -52,7 +52,6 @@ void        User::splitAndProcess(const std::string& data) {
         while (iss >> word) {
             _incomingMsgs.push_back(word); // Add words to the _incomingMsgs
         }
-
         start = end + 2; // Skip the "\r\n" characters for the next search
     }
 

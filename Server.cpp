@@ -22,6 +22,16 @@ Server::~Server()
 
 //===============================<START>========================================================
 
+int checkDupNickname(std::vector<User *> users, std::string nickname)
+{
+	for (std::vector<User *>::iterator it = users.begin(); it != users.end(); ++it)
+	{
+		if ((*it)->getNickname() == nickname)
+			return 1;
+	}
+	return 0;
+}
+
 static void welcomeMsg(int clientFd)
 {
 
@@ -107,8 +117,25 @@ void Server::runServer()
 						{
 							for (size_t i = 0; i < (*it)->_incomingMsgs.size(); ++i)
 							{
+								if ((*it)->_incomingMsgs[i] == "PASS")
+								{
+									if ((*it)->_incomingMsgs[i + 1] != _password)
+									{
+										std::string error = "ERROR :Wrong password\r\n";
+										send((*it)->getFd(), error.c_str(), error.length(), 0);
+										removeUser(_users, (*it)->getFd());
+										break;
+									}
+								}
 								if ((*it)->_incomingMsgs[i] == "NICK")
 								{
+									if (checkDupNickname(_users, (*it)->_incomingMsgs[i + 1]))
+									{
+										std::string error = "ERROR :Nickname is already in use\r\n";
+										send((*it)->getFd(), error.c_str(), error.length(), 0);
+										removeUser(_users, (*it)->getFd());
+										break ;
+									}
 									(*it)->setNickname((*it)->_incomingMsgs[i + 1]);
 								}
 								if ((*it)->_incomingMsgs[i] == "USER")
@@ -126,7 +153,6 @@ void Server::runServer()
 							std::cout << (*it)->getUsername() << "\n";
 
 							(*it)->setIsAuth(true);
-							// sendWelcomeMessages((*it)->getFd());
 						}
 					}
 				}
