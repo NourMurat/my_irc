@@ -103,27 +103,30 @@ void Server::runServer()
 						(*it)->parse((*it)->_incomingMsgs[0]);
 						// for (size_t i = 0; i < (*it)->_incomingMsgs.size(); ++i)
 						//     std::cout << i << ": " << (*it)->_incomingMsgs[i] << std::endl; //debugging
-						if (!(*it)->getIsAuth())
+						if (!(*it)->getIsAuth() || (*it)->getNickname().empty() || (*it)->getUsername().empty())
 						{
-							if ((*it)->getNickname().empty() || (*it)->getUsername().empty())
+							for (size_t i = 0; i < (*it)->_incomingMsgs.size(); ++i)
 							{
-								for (size_t i = 0; i < (*it)->_incomingMsgs.size(); ++i)
+								if ((*it)->_incomingMsgs[i] == "NICK")
 								{
-									if ((*it)->_incomingMsgs[i] == "NICK")
-									{
-										(*it)->setNickname((*it)->_incomingMsgs[i + 1]);
-									}
-									if ((*it)->_incomingMsgs[i] == "USER")
-									{
-										(*it)->setUsername((*it)->_incomingMsgs[i + 3]);
-									}
+									(*it)->setNickname((*it)->_incomingMsgs[i + 1]);
+								}
+								if ((*it)->_incomingMsgs[i] == "USER")
+								{
+									(*it)->setUsername((*it)->_incomingMsgs[i + 3]);
+								}
+								if (!(*it)->getIsAuth())
+								{
 									welcomeMsg((*it)->getFd());
 									(*it)->setIsAuth(true);
 								}
 							}
+							std::cout << _password << "\n";
 							std::cout << (*it)->getNickname() << "\n";
 							std::cout << (*it)->getUsername() << "\n";
+
 							(*it)->setIsAuth(true);
+							// sendWelcomeMessages((*it)->getFd());
 						}
 					}
 				}
@@ -152,7 +155,7 @@ void Server::bindSocket(int sockfd)
 	struct sockaddr_in serverAddr;
 	std::memset(&serverAddr, 0, sizeof(serverAddr));
 	serverAddr.sin_family = AF_INET;
-	serverAddr.sin_addr.s_addr = INADDR_ANY;                   //(0.0. 0.0) any address for binding
+	serverAddr.sin_addr.s_addr = INADDR_ANY;				   //(0.0. 0.0) any address for binding
 	serverAddr.sin_port = htons(static_cast<uint16_t>(_port)); // convert to network byte order.
 
 	// int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
