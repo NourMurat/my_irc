@@ -22,19 +22,18 @@ Server::~Server()
 
 //===============================<START>========================================================
 
-static void welcomeMsg(int clientFd)
+static void welcomeMsg(User *user)
 {
 
 	std::string welcomeMsg;
-	welcomeMsg = ": IRC 001 Welcome to the Internet Relay Network!\r\n";
-	send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
-	welcomeMsg = ": IRC 002 Your host is running Irssi: Client: irssi 1.2.2-1ubuntu1.1 (20190829 0225)\r\n";
-	send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
-	welcomeMsg = ": IRC 003 This server was created November 2023\r\n";
-	send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
-	welcomeMsg = ": IRC 004 This Server was created by Reem, NourMurat and German\r\n";
-	send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
-	std::cout << BLUE << "new client connected FD:" << clientFd << RESET << std::endl;
+	welcomeMsg = ":IRC 001 " + user->getNickname() +  "!" + user->getUsername() + " :Welcome to the Internet Relay Network <nick>!<user>@<host>\r\n";
+	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
+	welcomeMsg = ":IRC 002 " + user->getNickname() + "!" + user->getUsername() + " :Your host is <servername>, running version <ver>\r\n";
+	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
+	welcomeMsg = ":IRC 003 " + user->getNickname() + "!" + user->getUsername() + " :This server was created in December 2023\r\n";
+	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
+	welcomeMsg = ":IRC 004 " + user->getNickname() + "!" + user->getUsername() + " :<servername> <version> <available user modes> <available channel modes>\r\n";
+	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
 }
 
 void Server::runServer()
@@ -79,6 +78,7 @@ void Server::runServer()
 					std::cout << "User has been created with class User FD:" << _users[i]->getFd() << std::endl; // for check create class User
 					std::string welcomeMsg = "CAP * ACK multi-prefix\r\n";
 					send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
+                    std::cout << BLUE << "new client connected FD:" << clientFd << RESET << std::endl;
 				}
 				else
 				{
@@ -117,7 +117,7 @@ void Server::runServer()
 								}
 								if (!(*it)->getIsAuth())
 								{
-									welcomeMsg((*it)->getFd());
+									welcomeMsg((*it));
 									(*it)->setIsAuth(true);
 								}
 							}
