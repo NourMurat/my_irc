@@ -101,15 +101,15 @@ bool User::getIsAuth() const
 
 void User::setNickname(std::string nickname)
 {
-    if (nickname.length() > 9)
-        nickname = nickname.substr(0, 8) + ".";
+    // if (nickname.length() > 9)
+        // nickname = nickname.substr(0, 8) + ".";
     this->_nickname = nickname;
 }
 
 void User::setUsername(std::string username)
 {
-    if (username.length() > 9)
-        username = username.substr(0, 8) + ".";
+    // if (username.length() > 9)
+        // username = username.substr(0, 8) + ".";
     this->_username = username;
 }
 
