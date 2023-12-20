@@ -17,9 +17,10 @@ class User
 		std::string 				_realname;
 		std::string 				_nickname;
 		std::string 				_username;
+		std::string					_userHost;
 
 	public:
-		std::deque<std::string>		_incomingMsgs;
+		std::vector<std::string>		_incomingMsgs;
 		// std::deque<std::string>		outgoingmsg;
 		// std::deque<std::string>		messageDeque;
 		User(int fd);
@@ -30,20 +31,22 @@ class User
 
 		std::string 				getNickname() const;
 		std::string 				getUsername() const;
+		std::string					getUserHost() const;
+		std::string					getBuffer() const;
 		bool 						getIsAuth() const;
 
 		void 						setNickname(std::string nickname);
 		void 						setUsername(std::string username);
+		void						setUserHost(std::string userHost);
 		void 						setIsAuth(bool isAuth);
 
 		void						addMessage(std::string msg);
-		std::deque<std::string> 	getMessageDeque();
+		// std::deque<std::string> 	getMessageDeque();
 		bool						getIsOP() const;
 		void						setIsOP(bool isOP);
 
 		size_t						receiveMsg();
 		void						splitAndProcess(const std::string& data);
-		std::string					getBuffer();
 
 		void						parse(std::string msg);
 		bool operator==(const User& other) const { // if find_if is not in cpp 98, change it
