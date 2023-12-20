@@ -32,19 +32,18 @@ int checkDupNickname(std::vector<User *> users, std::string nickname)
 	return 0;
 }
 
-static void welcomeMsg(int clientFd)
+void welcomeMsg(User *user)
 {
 
 	std::string welcomeMsg;
-	welcomeMsg = ": IRC 001 Welcome to the Internet Relay Network!\r\n";
-	send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
-	welcomeMsg = ": IRC 002 Your host is running Irssi: Client: irssi 1.2.2-1ubuntu1.1 (20190829 0225)\r\n";
-	send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
-	welcomeMsg = ": IRC 003 This server was created November 2023\r\n";
-	send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
-	welcomeMsg = ": IRC 004 This Server was created by Reem, NourMurat and German\r\n";
-	send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
-	std::cout << BLUE << "new client connected FD:" << clientFd << RESET << std::endl;
+	welcomeMsg = ":IRC 001 " + user->getNickname() +  "!" + user->getUsername() + "@" + user->getUserHost() + " :Welcome to the Internet Relay Network " + user->getNickname() + "\r\n";
+	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
+	welcomeMsg = ":IRC 002 " + user->getNickname() + "!" + user->getUsername() + "@" + user->getUserHost() + " :Your host is " + user->getUserHost() + ", running version V1.0\r\n";
+	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
+	welcomeMsg = ":IRC 003 " + user->getNickname() + "!" + user->getUsername() + "@" + user->getUserHost() + " :This server was created in December 2023\r\n";
+	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
+	welcomeMsg = ":IRC 004 " + user->getNickname() + "!" + user->getUsername() + "@" + user->getUserHost() + " :<servername> <version> <available user modes> <available channel modes>\r\n";
+	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
 }
 
 void Server::runServer()
@@ -86,9 +85,10 @@ void Server::runServer()
 					pollfd tmp2 = {clientFd, POLLIN, 0};
 					_fds.push_back(tmp2);
 					_users.push_back(new User(clientFd));
-					std::cout << "User has been created with class User FD:" << _users[i]->getFd() << std::endl; // for check create class User
-					std::string welcomeMsg = "CAP * ACK multi-prefix\r\n";
-					send(clientFd, welcomeMsg.c_str(), welcomeMsg.length(), 0);
+					std::cout << "User has been created with class User FD:" << _users[i]->getFd() << std::endl; // for debugging -> create class User
+					std::string firstServerMsg = "CAP * ACK multi-prefix\r\n";
+					send(clientFd, firstServerMsg.c_str(), firstServerMsg.length(), 0);
+                    std::cout << BLUE << "new client connected FD:" << clientFd << RESET << std::endl;
 				}
 				else
 				{
@@ -111,8 +111,8 @@ void Server::runServer()
 						std::cout << BLUE << "Received message from client" << _fds[i].fd << ":\n"
 								  << RESET << (*it)->getBuffer() << std::endl;
 						(*it)->parse((*it)->_incomingMsgs[0]);
-						// for (size_t i = 0; i < (*it)->_incomingMsgs.size(); ++i)
-						//     std::cout << i << ": " << (*it)->_incomingMsgs[i] << std::endl; //debugging
+						// for (size_t i = 0; i < (*it)->_incomingMsgs.size(); ++i) //debugging, delete it before submit
+						//     std::cout << i << ": " << (*it)->_incomingMsgs[i] << std::endl; //debugging, delete it before submit
 						if (!(*it)->getIsAuth() || (*it)->getNickname().empty() || (*it)->getUsername().empty())
 						{
 							for (size_t i = 0; i < (*it)->_incomingMsgs.size(); ++i)
@@ -136,27 +136,39 @@ void Server::runServer()
 										removeUser(_users, (*it)->getFd());
 										break ;
 									}
-									(*it)->setNickname((*it)->_incomingMsgs[i + 1]);
+									(*it)->setNickname((*it)->_incomingMsgs[i + 1]); //user nick
 								}
 								if ((*it)->_incomingMsgs[i] == "USER")
 								{
-									(*it)->setUsername((*it)->_incomingMsgs[i + 3]);
+									(*it)->setUsername((*it)->_incomingMsgs[i + 1]); //user name
+									(*it)->setUserHost((*it)->_incomingMsgs[i + 3]); //user host
 								}
-								if (!(*it)->getIsAuth())
+								if (!(*it)->getIsAuth() && (!(*it)->getNickname().empty()) && \
+										(!(*it)->getUsername().empty()) && (!(*it)->getUserHost().empty()))
 								{
-									welcomeMsg((*it)->getFd());
+									welcomeMsg((*it));
 									(*it)->setIsAuth(true);
 								}
 							}
-							std::cout << _password << "\n";
-							std::cout << (*it)->getNickname() << "\n";
-							std::cout << (*it)->getUsername() << "\n";
-
-							(*it)->setIsAuth(true);
+							//debugging, delete it before submit
+							if (((*it)->getIsAuth() && !(*it)->getNickname().empty()) && (!(*it)->getUsername().empty()) && \
+									(!(*it)->getUserHost().empty())) {
+								std::cout << "<SERVER`S DATA>" << "\n";
+								std::cout << "Password - " << _password << "\n";
+								std::cout << "NickName - "<< (*it)->getNickname() << "\n";
+								std::cout << "UserName - "<< (*it)->getUsername() << "\n";
+								std::cout << "UserHost - "<< (*it)->getUserHost() << "\n";
+							}
 						}
 					}
 				}
 			}
+            else if ((_fds[i].revents & POLLHUP) == POLLHUP)
+            {
+                std::vector<User *>::iterator it = std::find_if(_users.begin(), _users.end(), FindByFD(_fds[i].fd));
+                removeUser(_users, (*it)->getFd());
+                break;
+            }
 		}
 	}
 }

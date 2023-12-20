@@ -7,6 +7,7 @@ User::User(int fd) : _fd(fd) {
     this->_buffer = "";
     this->_nickname = "";
     this->_username = "";
+    this->_userHost = "";
     this->_realname = "";
 }
 
@@ -16,7 +17,7 @@ User::~User() {
     closeSocket();
 }
 
-//==============================================================================================
+//=================================<USER RECEIVES MSG>=============================================================
 
 size_t      User::receiveMsg() {
     char buffer[4096]; // Create a buffer to store incoming data
@@ -68,7 +69,7 @@ void        User::splitAndProcess(const std::string& data) {
 
 //---------------------------------------------------------------------------------------------
 
-void User::addMessage(std::string msg)
+void            User::addMessage(std::string msg)
 {
     this->_incomingMsgs.push_back(msg);
 }
@@ -78,46 +79,19 @@ void User::addMessage(std::string msg)
 //     return (this->messageDeque);
 // }
 
-int User::getFd() const
-{
-    return (_fd);
-}
+int             User::getFd() const { return (_fd); }
+std::string     User::getNickname() const { return (_nickname); }
+std::string     User::getUsername() const { return (_username); }
+std::string     User::getUserHost() const { return (_userHost); }
+std::string     User::getBuffer() const { return _buffer; }
+bool            User::getIsAuth() const { return (_isAuth); }
 
-std::string User::getNickname() const
-{
-    return (_nickname);
-}
+void            User::setNickname(std::string nickname) { this->_nickname = nickname; }
+void            User::setUsername(std::string username) { this->_username = username; }
+void            User::setUserHost(std::string userHost) { this->_userHost = userHost; }
+void            User::setIsAuth(bool isAuth) { this->_isAuth = isAuth; }
 
-std::string User::getUsername() const
-{
-    return (_username);
-}
-
-bool User::getIsAuth() const
-{
-    return (_isAuth);
-}
-
-void User::setNickname(std::string nickname)
-{
-    // if (nickname.length() > 9)
-        // nickname = nickname.substr(0, 8) + ".";
-    this->_nickname = nickname;
-}
-
-void User::setUsername(std::string username)
-{
-    // if (username.length() > 9)
-        // username = username.substr(0, 8) + ".";
-    this->_username = username;
-}
-
-void User::setIsAuth(bool isAuth)
-{
-    this->_isAuth = isAuth;
-}
-
-void User::closeSocket()
+void            User::closeSocket()
 {
     if (_fd != -1)
     {
@@ -126,11 +100,8 @@ void User::closeSocket()
     }
 }
 
-void User::parse(std::string msg)
+void            User::parse(std::string msg)
 {
     (void)msg;
 }
 
-std::string     User::getBuffer() {
-    return _buffer;
-}
