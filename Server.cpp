@@ -234,6 +234,7 @@ void Server::removeUser(std::vector<User *> &users, int fd)
 	{
 		_fds.erase(itFd);
 	}
+	std::cout << GREEN << "User has been removed from the server!" << RESET << std::endl;
 }
 
 //====================================<SIGNALS && SHUTDOWN>====================================
