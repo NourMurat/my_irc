@@ -2,9 +2,23 @@
 
 Channel::Channel(std::string name)
 {
-    this->_name = name;
+    this->_channelName = name;
     this->_key = "";
-    this->_maximumUsers = 512;
+    this->_maximumUsers = 510;
+    this->_isInviteOnly = false;
+    this->_mode['i'] = false;
+    this->_mode['t'] = false;
+    this->_mode['k'] = false;
+    this->_mode['o'] = false;
+    this->_mode['l'] = false;
+}
+
+Channel::Channel(std::string name, std::string key)
+{
+    this->_channelName = name;
+    this->_key = key;
+    this->_maximumUsers = 510;
+    this->_isInviteOnly = false;
     this->_mode['i'] = false;
     this->_mode['t'] = false;
     this->_mode['k'] = false;
@@ -19,7 +33,7 @@ Channel::~Channel()
 // GETTERS AND SETTERS
 std::string Channel::getName() const
 {
-    return this->_name;
+    return this->_channelName;
 }
 
 std::string Channel::getTopic() const
@@ -44,7 +58,7 @@ std::map<char, bool> Channel::getMode() const
 
 void Channel::setName(std::string name)
 {
-    this->_name = name;
+    this->_channelName = name;
 }
 
 void Channel::setTopic(std::string topic)

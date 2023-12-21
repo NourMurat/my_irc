@@ -68,7 +68,7 @@ int	isCommand(std::string command)
 		return (TOPIC);
 	if (command == "MODE")
 		return (MODE);
-	if (command == "QUIT")
+	if (command == "QUIT" || "/QUIT")
 		return (QUIT);
 	return (NOTCOMMAND);
 }
@@ -222,7 +222,7 @@ void Server::runServer()
 									std::string pong = "PONG\r\n";
 									send((*it)->getFd(), pong.c_str(), pong.length(), 0);
 									std::cout << "PONG has been sent to " << (*it)->getNickname() << std::endl;
-									continue ; //change later
+									break ;
 								}
 								case QUIT:
 								{
@@ -235,15 +235,19 @@ void Server::runServer()
 								case MSG:
 								case PRIVMSG:
 								{
-									std::vector<User *>::iterator itReceiver = std::find_if(_users.begin(), _users.end(), FindByNickname((*it)->_incomingMsgs[1]));
-									std::string msg = (*it)->_incomingMsgs[2];
-									if ((*itReceiver)->getFd() != -1)
+									if ((*it)->_incomingMsgs[1][0] != '#')
 									{
-										for (unsigned int index = 3; index < (*it)->_incomingMsgs.size(); ++index)
-											msg += " " + (*it)->_incomingMsgs[index];
-										std::string resendMsg = ":" + (*it)->getNickname() + " PRIVMSG " + (*it)->_incomingMsgs[1] + " " + msg + "\r\n";
-										send((*itReceiver)->getFd(), resendMsg.c_str(), resendMsg.length(), 0);
+										std::vector<User *>::iterator itReceiver = std::find_if(_users.begin(), _users.end(), FindByNickname((*it)->_incomingMsgs[1]));
+										std::string msg = (*it)->_incomingMsgs[2];
+										if ((*itReceiver)->getFd() != -1)
+										{
+											for (unsigned int index = 3; index < (*it)->_incomingMsgs.size(); ++index)
+												msg += " " + (*it)->_incomingMsgs[index];
+											std::string resendMsg = ":" + (*it)->getNickname() + " PRIVMSG " + (*it)->_incomingMsgs[1] + " " + msg + "\r\n";
+											send((*itReceiver)->getFd(), resendMsg.c_str(), resendMsg.length(), 0);
+										}
 									}
+									break ;
 								}
 								default:
 								{
