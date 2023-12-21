@@ -32,6 +32,22 @@ class Server;
 
 extern Server* globalServerInstance; // to use static signal and shutdown functions
 
+enum e_commands
+{
+	NOTCOMMAND,
+	PING,
+	NICK,
+	USER,
+	MSG,
+	PRIVMSG,
+	JOIN,
+	PART,
+	INVITE,
+	TOPIC,
+	MODE,
+	QUIT
+};
+
 class Server
 {
     private:
@@ -65,6 +81,8 @@ class Server
 		static void			sigIntHandler(int signal);
 		static void			sigTermHandler(int signal);
 		static void			shutdownServer();
+		void				authenticateUser(int i);
+
 };
 
 struct FindByFD
@@ -80,13 +98,13 @@ struct FindByFD
     }
 };
 
-struct FindByNickname {
-    std::string nickname;
+struct FindByNickname
+{
+	std::string nick;
 
-    FindByNickname(const std::string& nickname) : nickname(nickname) { }
-
-    bool operator()(const User* user) const {
-        return user->getNickname() == nickname;
+    FindByNickname(const std::string &nick) : nick(nick) { }
+    bool operator()(const User *user) const {
+        return user->getNickname() == nick;
     }
 };
 

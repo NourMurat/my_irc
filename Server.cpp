@@ -49,6 +49,76 @@ void Server::welcomeMsg(User *user)
 	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
 }
 
+int	isCommand(std::string command)
+{
+	if (command == "NICK" || command == "/NICK")
+		return (NICK);
+	if (command == "USER" || command == "/USER")
+		return (USER);
+	if (command == "JOIN")
+		return (JOIN);
+	if (command == "MSG")
+		return (MSG);
+	if (command == "PRIVMSG")
+		return (PRIVMSG);
+	if (command == "PING")
+		return (PING);
+	if (command == "PART")
+		return (PART);
+	if (command == "INVITE")
+		return (INVITE);
+	if (command == "TOPIC")
+		return (TOPIC);
+	if (command == "MODE")
+		return (MODE);
+	if (command == "QUIT" || "/QUIT")
+		return (QUIT);
+	return (NOTCOMMAND);
+}
+
+void	Server::authenticateUser(int i)
+{
+	std::vector<User *>::iterator it = std::find_if(_users.begin(), _users.end(), FindByFD(_fds[i].fd));
+	if (!(*it)->getIsAuth())
+	{
+		for (size_t i = 0; i < (*it)->_incomingMsgs.size(); ++i)
+		{
+			if ((*it)->_incomingMsgs[i] == "PASS")
+			{
+				if ((*it)->_incomingMsgs[i + 1] != _password)
+				{
+					std::string error = "ERROR :Wrong password\r\n";
+					send((*it)->getFd(), error.c_str(), error.length(), 0);
+					removeUser(_users, (*it)->getFd());
+					break;
+				}
+			}
+			if ((*it)->_incomingMsgs[i] == "NICK")
+			{
+				if (checkDupNickname(_users, (*it)->_incomingMsgs[i + 1]))
+				{
+					std::string error = "ERROR :Nickname is already in use\r\n";
+					send((*it)->getFd(), error.c_str(), error.length(), 0);
+					removeUser(_users, (*it)->getFd());
+					break;
+				}
+				(*it)->setNickname((*it)->_incomingMsgs[i + 1]); // user nick
+			}
+			if ((*it)->_incomingMsgs[i] == "USER")
+			{
+				(*it)->setUsername((*it)->_incomingMsgs[i + 1]); // user name
+				(*it)->setUserHost((*it)->_incomingMsgs[i + 3]); // user host
+			}
+			if (!(*it)->getIsAuth() && (!(*it)->getNickname().empty()) &&
+				(!(*it)->getUsername().empty()) && (!(*it)->getUserHost().empty()))
+			{
+				welcomeMsg((*it));
+				(*it)->setIsAuth(true);
+			}
+		}
+	}
+}
+
 void Server::runServer()
 {
 	int optval = 1;
@@ -115,49 +185,81 @@ void Server::runServer()
 						// (*it)->parse((*it)->_incomingMsgs[0]); // Reem`s function
 						// for (size_t i = 0; i < (*it)->_incomingMsgs.size(); ++i) //debugging, delete it before submit
 						//     std::cout << i << ": " << (*it)->_incomingMsgs[i] << std::endl; //debugging, delete it before submit
-						if (!(*it)->getIsAuth() || (*it)->getNickname().empty() || (*it)->getUsername().empty())
+						if (!(*it)->getIsAuth())
 						{
-							for (size_t i = 0; i < (*it)->_incomingMsgs.size(); ++i)
+							authenticateUser(i);
+							//debugging, delete it before submit
+							if (((*it)->getIsAuth() && !(*it)->getNickname().empty()) && (!(*it)->getUsername().empty()) && \
+									(!(*it)->getUserHost().empty())) {
+								std::cout << "<SERVER`S DATA>" << "\n";
+								std::cout << "Password - " << _password << "\n";
+								std::cout << "NickName - "<< (*it)->getNickname() << "\n";
+								std::cout << "UserName - "<< (*it)->getUsername() << "\n";
+								std::cout << "UserHost - "<< (*it)->getUserHost() << "\n";
+							}
+						}
+						if (isCommand((*it)->_incomingMsgs[0]) != NOTCOMMAND)
+						{
+							int i = isCommand((*it)->_incomingMsgs[0]);
+
+							switch (i)
 							{
-								if ((*it)->_incomingMsgs[i] == "PASS")
+								case NICK:
 								{
-									if ((*it)->_incomingMsgs[i + 1] != _password)
+									(*it)->setNickname((*it)->_incomingMsgs[1]);
+									std::string msg = "Your nickname has been changed to " + (*it)->getNickname() + "\r\n";
+									std::cout << "nickname has been set to "<< (*it)->getNickname() << "\n";
+									send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+									break ;
+								}
+								case USER:
+								{
+									(*it)->setUsername((*it)->_incomingMsgs[1]);
+									std::string msg = "Your username has been changed to " + (*it)->getNickname() + "\r\n";
+									std::cout << "username has been set to " << (*it)->getUsername() << std::endl;
+									send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+									break ;
+								}
+								case PING:
+								{
+									std::string pong = "PONG\r\n";
+									send((*it)->getFd(), pong.c_str(), pong.length(), 0);
+									std::cout << "PONG has been sent to " << (*it)->getNickname() << std::endl;
+									break ;
+								}
+								case QUIT:
+								{
+									std::string quit = "QUIT\r\n";
+									send((*it)->getFd(), quit.c_str(), quit.length(), 0);
+									std::cout << "QUIT has been sent to " << (*it)->getNickname() << std::endl;
+									removeUser(_users, (*it)->getFd());
+									break ;
+								}
+								case MSG:
+								case PRIVMSG:
+								{
+									if ((*it)->_incomingMsgs[1][0] != '#')
 									{
-										std::string error = "ERROR :Wrong password\r\n";
-										send((*it)->getFd(), error.c_str(), error.length(), 0);
-										removeUser(_users, (*it)->getFd());
-										break;
+										std::vector<User *>::iterator itReceiver = std::find_if(_users.begin(), _users.end(), FindByNickname((*it)->_incomingMsgs[1]));
+										std::string msg = (*it)->_incomingMsgs[2];
+										if ((*itReceiver)->getFd() != -1)
+										{
+											for (unsigned int index = 3; index < (*it)->_incomingMsgs.size(); ++index)
+												msg += " " + (*it)->_incomingMsgs[index];
+											std::string resendMsg = ":" + (*it)->getNickname() + " PRIVMSG " + (*it)->_incomingMsgs[1] + " " + msg + "\r\n";
+											send((*itReceiver)->getFd(), resendMsg.c_str(), resendMsg.length(), 0);
+										}
 									}
+									break ;
 								}
-								if ((*it)->_incomingMsgs[i] == "NICK")
+								default:
 								{
-									if (checkDupNickname(_users, (*it)->_incomingMsgs[i + 1]))
-									{
-										std::string error = "ERROR :Nickname is already in use\r\n";
-										send((*it)->getFd(), error.c_str(), error.length(), 0);
-										removeUser(_users, (*it)->getFd());
-										break ;
-									}
-									(*it)->setNickname((*it)->_incomingMsgs[i + 1]); //user nick
-								}
-								if ((*it)->_incomingMsgs[i] == "USER")
-								{
-									(*it)->setUsername((*it)->_incomingMsgs[i + 1]); //user name
-									(*it)->setUserHost((*it)->_incomingMsgs[i + 3]); //user host
-								}
-								if (!(*it)->getIsAuth() && (!(*it)->getNickname().empty()) && \
-										(!(*it)->getUsername().empty()) && (!(*it)->getUserHost().empty()))
-								{
-									welcomeMsg((*it));
-									(*it)->setIsAuth(true);
 									std::cout << GREEN << "USER FD:" + std::to_string((*it)->getFd()) + " AUTHORIZED SUCCESS!!!" << "\n";
-									// std::cout << "Password - " << _password << "\n";
-									std::cout << "NickName - "<< (*it)->getNickname() << " (is unique)\n";
+									std::cout << "NickName - "<< (*it)->getNickname() << "\n";
 									std::cout << "UserName - "<< (*it)->getUsername() << "\n";
 									std::cout << "UserHost - "<< (*it)->getUserHost() << RESET << "\n";
 								}
 							}
-
 						}
 						// if (((*it)->getIsAuth() && !(*it)->getNickname().empty()) && (!(*it)->getUsername().empty()) && \
 						// 		(!(*it)->getUserHost().empty())) {
@@ -251,6 +353,7 @@ void Server::removeUser(std::vector<User *> &users, int fd)
     {
         _fds.erase(itFd);
     }
+	std::cout << GREEN << "User has been removed from the server!" << RESET << std::endl;
 }
 
 //====================================<SIGNALS && SHUTDOWN>====================================
