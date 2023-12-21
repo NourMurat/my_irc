@@ -3,6 +3,7 @@
 Channel::Channel(std::string name)
 {
     this->_name = name;
+    this->_key = "";
     this->_maximumUsers = 512;
     this->_mode['i'] = false;
     this->_mode['t'] = false;
@@ -43,12 +44,7 @@ std::map<char, bool> Channel::getMode() const
 
 void Channel::setName(std::string name)
 {
-    // if (name.find_first_of(" \a\b\f\n\r\t\v") != std::string::npos)
-    //     throw (std::invalid_argument("Invalid channel name"));
-    // else if (name[0] != '#' || name[0] != '&')
-    //     throw (std::invalid_argument("Channel must start with \'#\' or \'&\'"));
-    // else
-        this->_name = name;
+    this->_name = name;
 }
 
 void Channel::setTopic(std::string topic)
