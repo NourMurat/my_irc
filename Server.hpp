@@ -41,7 +41,6 @@ class Server
         int             _port;
         bool            _disconnect;
 
-
 	public:
 		Server();
 		Server (const int& port, const std::string& password);
@@ -53,11 +52,16 @@ class Server
 		void				listenSocket(int sockfd);
 		int					acceptConection(int sockfd);
 		void				removeUser(std::vector<User *>& users, int fd);
-		void	removeUser(int fd);
+		// void	removeUser(int fd);
 
 		std::vector<User *>	_users;
 		std::vector<pollfd>	_fds;
-		void				createNewUser(int fd);
+		// void				createNewUser(int fd);
+
+		void 				welcomeMsg(User *user);
+		void 				execMessage(User *user);
+		int 				checkDupNickname(std::vector<User *> users, std::string nickname);
+
 		static void			sigIntHandler(int signal);
 		static void			sigTermHandler(int signal);
 		static void			shutdownServer();
@@ -73,6 +77,16 @@ struct FindByFD
     }
     bool operator()(const struct pollfd& pfd) const {
         return pfd.fd == fd;
+    }
+};
+
+struct FindByNickname {
+    std::string nickname;
+
+    FindByNickname(const std::string& nickname) : nickname(nickname) { }
+
+    bool operator()(const User* user) const {
+        return user->getNickname() == nickname;
     }
 };
 
