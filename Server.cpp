@@ -8,7 +8,17 @@ Server::Server() : _port(0), _disconnect(true)
 	globalServerInstance = this;
 }
 
-Server::Server(const int &port, const std::string &password) : _password(password), _port(port), _disconnect(true)
+std::string Server::getServerName() const
+{
+	return this->_serverName;
+}
+
+void Server::setServerName(std::string serverName)
+{
+	this->_serverName = serverName;
+}
+
+Server::Server(const int &port, const std::string &password) : _serverName(""), _password(password), _port(port), _disconnect(true)
 {
 	std::cout << GREEN << "Server Parameter Constructor has called!" << RESET << std::endl;
 	globalServerInstance = this;
@@ -32,21 +42,21 @@ int checkDupNickname(std::vector<User *> users, std::string nickname)
 	return 0;
 }
 
-void welcomeMsg(User *user)
+void Server::welcomeMsg(User *user)
 {
 
 	std::string welcomeMsg;
-	welcomeMsg = ":IRC 001 " + user->getNickname() +  "!" + user->getUsername() + "@" + user->getUserHost() + " :Welcome to the Internet Relay Network " + user->getNickname() + "\r\n";
+	welcomeMsg = ":IRC 001 " + _serverName + " :Welcome to the Internet Relay Network " + user->getNickname() + "\r\n";
 	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
-	welcomeMsg = ":IRC 002 " + user->getNickname() + "!" + user->getUsername() + "@" + user->getUserHost() + " :Your host is " + user->getUserHost() + ", running version V1.0\r\n";
+	welcomeMsg = ":IRC 002 " + _serverName + " :Your host is " + _serverName + ", running version V1.0\r\n";
 	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
-	welcomeMsg = ":IRC 003 " + user->getNickname() + "!" + user->getUsername() + "@" + user->getUserHost() + " :This server was created in December 2023\r\n";
+	welcomeMsg = ":IRC 003 " + _serverName + " :This server was created in December 2023\r\n";
 	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
-	welcomeMsg = ":IRC 004 " + user->getNickname() + "!" + user->getUsername() + "@" + user->getUserHost() + " :<servername> <version> <available user modes> <available channel modes>\r\n";
+	welcomeMsg = ":IRC 004 " + _serverName + " :<servername> <version> <available user modes> <available channel modes>\r\n";
 	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
 }
 
-int	isCommand(std::string command)
+int isCommand(std::string command)
 {
 	if (command == "NICK" || command == "/NICK")
 		return (NICK);
@@ -68,12 +78,12 @@ int	isCommand(std::string command)
 		return (TOPIC);
 	if (command == "MODE")
 		return (MODE);
-	if (command == "QUIT" || "/QUIT")
+	if (command == "QUIT" || command == "/QUIT")
 		return (QUIT);
 	return (NOTCOMMAND);
 }
 
-void	Server::authenticateUser(int i)
+void Server::authenticateUser(int i)
 {
 	std::vector<User *>::iterator it = std::find_if(_users.begin(), _users.end(), FindByFD(_fds[i].fd));
 	if (!(*it)->getIsAuth())
@@ -104,10 +114,10 @@ void	Server::authenticateUser(int i)
 			if ((*it)->_incomingMsgs[i] == "USER")
 			{
 				(*it)->setUsername((*it)->_incomingMsgs[i + 1]); // user name
-				(*it)->setUserHost((*it)->_incomingMsgs[i + 3]); // user host
+				setServerName((*it)->_incomingMsgs[i + 3]);		 // server name
 			}
 			if (!(*it)->getIsAuth() && (!(*it)->getNickname().empty()) &&
-				(!(*it)->getUsername().empty()) && (!(*it)->getUserHost().empty()))
+				(!(*it)->getUsername().empty()) && (!getServerName().empty()))
 			{
 				welcomeMsg((*it));
 				(*it)->setIsAuth(true);
@@ -158,7 +168,7 @@ void Server::runServer()
 					std::cout << "User has been created with class User FD:" << _users[i]->getFd() << std::endl; // for debugging -> create class User
 					std::string firstServerMsg = "CAP * ACK multi-prefix\r\n";
 					send(clientFd, firstServerMsg.c_str(), firstServerMsg.length(), 0);
-                    std::cout << BLUE << "new client connected FD:" << clientFd << RESET << std::endl;
+					std::cout << BLUE << "new client connected FD:" << clientFd << RESET << std::endl;
 				}
 				else
 				{
@@ -185,14 +195,16 @@ void Server::runServer()
 						if (!(*it)->getIsAuth())
 						{
 							authenticateUser(i);
-							//debugging, delete it before submit
-							if (((*it)->getIsAuth() && !(*it)->getNickname().empty()) && (!(*it)->getUsername().empty()) && \
-									(!(*it)->getUserHost().empty())) {
-								std::cout << "<SERVER`S DATA>" << "\n";
+							// debugging, delete it before submit
+							if (((*it)->getIsAuth() && !(*it)->getNickname().empty()) && (!(*it)->getUsername().empty()) &&
+								(!getServerName().empty()))
+							{
+								std::cout << GREEN << "<SERVER`S DATA>"
+										  << "\n";
 								std::cout << "Password - " << _password << "\n";
-								std::cout << "NickName - "<< (*it)->getNickname() << "\n";
-								std::cout << "UserName - "<< (*it)->getUsername() << "\n";
-								std::cout << "UserHost - "<< (*it)->getUserHost() << "\n";
+								std::cout << "NickName - " << (*it)->getNickname() << "\n";
+								std::cout << "UserName - " << (*it)->getUsername() << "\n";
+								std::cout << "Server Name - " << _serverName << RESET << "\n";
 							}
 						}
 						if (isCommand((*it)->_incomingMsgs[0]) != NOTCOMMAND)
@@ -201,72 +213,73 @@ void Server::runServer()
 
 							switch (i)
 							{
-								case NICK:
+							case NICK:
+							{
+								(*it)->setNickname((*it)->_incomingMsgs[1]);
+								std::string msg = "Your nickname has been changed to " + (*it)->getNickname() + "\r\n";
+								std::cout << "nickname has been set to " << (*it)->getNickname() << "\n";
+								send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+								break;
+							}
+							case USER:
+							{
+								(*it)->setUsername((*it)->_incomingMsgs[1]);
+								std::string msg = "Your username has been changed to " + (*it)->getNickname() + "\r\n";
+								std::cout << "username has been set to " << (*it)->getUsername() << std::endl;
+								send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+								break;
+							}
+							case PING:
+							{
+								std::string pong = "PONG\r\n";
+								send((*it)->getFd(), pong.c_str(), pong.length(), 0);
+								std::cout << "PONG has been sent to " << (*it)->getNickname() << std::endl;
+								break;
+							}
+							case MSG:
+							case PRIVMSG:
+							{
+								if ((*it)->_incomingMsgs[1][0] != '#')
 								{
-									(*it)->setNickname((*it)->_incomingMsgs[1]);
-									std::string msg = "Your nickname has been changed to " + (*it)->getNickname() + "\r\n";
-									std::cout << "nickname has been set to "<< (*it)->getNickname() << "\n";
-									send((*it)->getFd(), msg.c_str(), msg.length(), 0);
-									break ;
-								}
-								case USER:
-								{
-									(*it)->setUsername((*it)->_incomingMsgs[1]);
-									std::string msg = "Your username has been changed to " + (*it)->getNickname() + "\r\n";
-									std::cout << "username has been set to " << (*it)->getUsername() << std::endl;
-									send((*it)->getFd(), msg.c_str(), msg.length(), 0);
-									break ;
-								}
-								case PING:
-								{
-									std::string pong = "PONG\r\n";
-									send((*it)->getFd(), pong.c_str(), pong.length(), 0);
-									std::cout << "PONG has been sent to " << (*it)->getNickname() << std::endl;
-									break ;
-								}
-								case QUIT:
-								{
-									std::string quit = "QUIT\r\n";
-									send((*it)->getFd(), quit.c_str(), quit.length(), 0);
-									std::cout << "QUIT has been sent to " << (*it)->getNickname() << std::endl;
-									removeUser(_users, (*it)->getFd());
-									break ;
-								}
-								case MSG:
-								case PRIVMSG:
-								{
-									if ((*it)->_incomingMsgs[1][0] != '#')
+									std::vector<User *>::iterator itReceiver = std::find_if(_users.begin(), _users.end(), FindByNickname((*it)->_incomingMsgs[1]));
+									std::string msg = (*it)->_incomingMsgs[2];
+									if ((*itReceiver)->getFd() != -1)
 									{
-										std::vector<User *>::iterator itReceiver = std::find_if(_users.begin(), _users.end(), FindByNickname((*it)->_incomingMsgs[1]));
-										std::string msg = (*it)->_incomingMsgs[2];
-										if ((*itReceiver)->getFd() != -1)
-										{
-											for (unsigned int index = 3; index < (*it)->_incomingMsgs.size(); ++index)
-												msg += " " + (*it)->_incomingMsgs[index];
-											std::string resendMsg = ":" + (*it)->getNickname() + " PRIVMSG " + (*it)->_incomingMsgs[1] + " " + msg + "\r\n";
-											send((*itReceiver)->getFd(), resendMsg.c_str(), resendMsg.length(), 0);
-										}
+										for (unsigned int index = 3; index < (*it)->_incomingMsgs.size(); ++index)
+											msg += " " + (*it)->_incomingMsgs[index];
+										std::string resendMsg = ":" + (*it)->getNickname() + " PRIVMSG " + (*it)->_incomingMsgs[1] + " " + msg + "\r\n";
+										send((*itReceiver)->getFd(), resendMsg.c_str(), resendMsg.length(), 0);
 									}
-									break ;
 								}
-								default:
-								{
-									std::cout << "<SERVER`S DATA>" << "\n";
-									std::cout << "NickName - "<< (*it)->getNickname() << "\n";
-									std::cout << "UserName - "<< (*it)->getUsername() << "\n";
-									std::cout << "UserHost - "<< (*it)->getUserHost() << "\n";
-								}
+								break;
+							}
+							case QUIT:
+							{
+								std::string quit = "QUIT\r\n";
+								send((*it)->getFd(), quit.c_str(), quit.length(), 0);
+								std::cout << "QUIT has been sent to " << (*it)->getNickname() << std::endl;
+								removeUser(_users, (*it)->getFd());
+								break;
+							}
+							default:
+							{
+								std::cout << "<SERVER`S DATA>"
+										  << "\n";
+								std::cout << "NickName - " << (*it)->getNickname() << "\n";
+								std::cout << "UserName - " << (*it)->getUsername() << "\n";
+								std::cout << "Server Name - " << _serverName << "\n";
+							}
 							}
 						}
 					}
 				}
 			}
-            else if ((_fds[i].revents & POLLHUP) == POLLHUP)
-            {
-                std::vector<User *>::iterator it = std::find_if(_users.begin(), _users.end(), FindByFD(_fds[i].fd));
-                removeUser(_users, (*it)->getFd());
-                break;
-            }
+			else if ((_fds[i].revents & POLLHUP) == POLLHUP)
+			{
+				std::vector<User *>::iterator it = std::find_if(_users.begin(), _users.end(), FindByFD(_fds[i].fd));
+				removeUser(_users, (*it)->getFd());
+				break;
+			}
 		}
 	}
 }

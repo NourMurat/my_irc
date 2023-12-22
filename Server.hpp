@@ -53,9 +53,10 @@ class Server
     private:
         // char            _buffer[4096];
 
-        std::string     _password;
-        int             _port;
-        bool            _disconnect;
+		std::string 		_serverName;
+        std::string     	_password;
+        int             	_port;
+        bool           		_disconnect;
 
 
 	public:
@@ -69,7 +70,10 @@ class Server
 		void				listenSocket(int sockfd);
 		int					acceptConection(int sockfd);
 		void				removeUser(std::vector<User *>& users, int fd);
-		void	removeUser(int fd);
+
+		std::string			getServerName() const;
+		void				setServerName(std::string serverName);
+		void				welcomeMsg(User *user);
 
 		std::vector<User *>	_users;
 		std::vector<pollfd>	_fds;
