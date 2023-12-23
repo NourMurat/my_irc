@@ -261,6 +261,10 @@ void Server::runServer()
 								removeUser(_users, (*it)->getFd());
 								break;
 							}
+							case PART:
+							{
+								break ;
+							}
 							default:
 							{
 								std::cout << "<SERVER`S DATA>"

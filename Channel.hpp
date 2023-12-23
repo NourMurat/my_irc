@@ -19,7 +19,8 @@ class Channel
 		unsigned int						_maximumUsers;
 	public:
 		std::map<char, bool>				_mode;
-		std::map<int, User *>				_liveUsers;
+		std::vector<User *>					_liveUsers;
+		// std::map<User *, bool>					_liveUsers;
 		std::vector<User *>					_operators;
 		std::vector<User *>					_invitedUsers;
 
@@ -35,5 +36,6 @@ class Channel
 		void				setTopic(std::string topic);
 		void				setKey(std::string key);
 		void				setMaximumUsers(unsigned int maximumUsers);
+	std::vector<User *> Channel::getLiveUsers() const
 		void				setMode(std::map<char, bool> mode);
 };

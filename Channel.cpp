@@ -80,3 +80,8 @@ void Channel::setMode(std::map<char, bool> mode)
 {
     this->_mode = mode;
 }
+
+std::vector<User *> Channel::getLiveUsers() const
+{
+    return this->_liveUsers;
+}
