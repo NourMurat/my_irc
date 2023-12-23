@@ -8,7 +8,17 @@ Server::Server() : _port(0), _disconnect(true)
 	globalServerInstance = this;
 }
 
-Server::Server(const int &port, const std::string &password) : _password(password), _port(port), _disconnect(true)
+std::string Server::getServerName() const
+{
+	return this->_serverName;
+}
+
+void Server::setServerName(std::string serverName)
+{
+	this->_serverName = serverName;
+}
+
+Server::Server(const int &port, const std::string &password) : _serverName(""), _password(password), _port(port), _disconnect(true)
 {
 	std::cout << GREEN << "Server Parameter Constructor has called!" << RESET << std::endl;
 	globalServerInstance = this;
@@ -35,21 +45,17 @@ int Server::checkDupNickname(std::vector<User *> users, std::string nickname)
 void Server::welcomeMsg(User *user)
 {
 	std::string welcomeMsg;
-	welcomeMsg = ":IRC 001 " + user->getNickname() +  "!" + user->getUsername() + "@" + user->getUserHost() + \
-			" :Welcome to the Internet Relay Network " + user->getNickname() + "\r\n";
+	welcomeMsg = ":IRC 001 " + _serverName + " :Welcome to the Internet Relay Network " + user->getNickname() + "\r\n";
 	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
-	welcomeMsg = ":IRC 002 " + user->getNickname() + "!" + user->getUsername() + "@" + user->getUserHost() + \
-			" :Your host is " + user->getUserHost() + ", running version v1.2.2-1ubuntu1.1\r\n";
+	welcomeMsg = ":IRC 002 " + _serverName + " :Your host is " + _serverName + ", running version V1.0\r\n";
 	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
-	welcomeMsg = ":IRC 003 " + user->getNickname() + "!" + user->getUsername() + "@" + user->getUserHost() + \
-			" :This server was created in December 2023\r\n";
+	welcomeMsg = ":IRC 003 " + _serverName + " :This server was created in December 2023\r\n";
 	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
-	welcomeMsg = ":IRC 004 " + user->getNickname() + "!" + user->getUsername() + "@" + user->getUserHost() + \
-			" :<servername> <version> <available user modes> <available channel modes>\r\n";
+	welcomeMsg = ":IRC 004 " + _serverName + " :<servername> <version> <available user modes> <available channel modes>\r\n";
 	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
 }
 
-int	isCommand(std::string command)
+int isCommand(std::string command)
 {
 	if (command == "NICK" || command == "/NICK")
 		return (NICK);
@@ -76,7 +82,7 @@ int	isCommand(std::string command)
 	return (NOTCOMMAND);
 }
 
-void	Server::authenticateUser(int i)
+void Server::authenticateUser(int i)
 {
 	std::vector<User *>::iterator it = std::find_if(_users.begin(), _users.end(), FindByFD(_fds[i].fd));
 	if (!(*it)->getIsAuth())
@@ -110,7 +116,7 @@ void	Server::authenticateUser(int i)
 				setServerName((*it)->_incomingMsgs[i + 3]); // server name
 			}
 			if (!(*it)->getIsAuth() && (!(*it)->getNickname().empty()) &&
-				(!(*it)->getUsername().empty()) && (!(*it)->getUserHost().empty()))
+				(!(*it)->getUsername().empty()) && (!getServerName().empty()))
 			{
 				welcomeMsg((*it));
 				(*it)->setIsAuth(true);
@@ -124,8 +130,6 @@ void Server::runServer()
 	int optval = 1;
 	int sockfd = createSocket();
 
-	// signal(SIGINT, Server::sigIntHandler);
-	// signal(SIGTERM, Server::sigTermHandler);
 	bindSocket(sockfd);
 	listenSocket(sockfd);
 	if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char *>(&optval), sizeof(optval)) < 0)
@@ -159,7 +163,7 @@ void Server::runServer()
 					std::cout << MAGENTA << "DEBUG:: User has been created with class User FD:" << _users[i]->getFd() << RESET << std::endl; // debugging -> create class User
 					std::string firstServerMsg = "CAP * ACK multi-prefix\r\n";
 					send(clientFd, firstServerMsg.c_str(), firstServerMsg.length(), 0);
-                    std::cout << BLUE << "new client connected FD:" << clientFd << RESET << std::endl;
+					std::cout << BLUE << "new client connected FD:" << clientFd << RESET << std::endl;
 				}
 				else
 				{
@@ -258,12 +262,16 @@ void Server::runServer()
 											std::string resendMsg = ":" + (*it)->getNickname() + " PRIVMSG " + (*it)->_incomingMsgs[1] + " " + msg + "\r\n";
 											send((*itReceiver)->getFd(), resendMsg.c_str(), resendMsg.length(), 0);
 										}
+										break ;
 									}
+								}
+								case PART:
+								{
 									break ;
 								}
 								default:
 								{
-
+									break;
 								}
 							}
 						}
@@ -271,15 +279,16 @@ void Server::runServer()
 						// 		(!(*it)->getUserHost().empty())) {
 						// 	execMessage((*it));
 						// }
+						
 					}
 				}
 			}
-            else if ((_fds[i].revents & POLLHUP) == POLLHUP)
-            {
-                std::vector<User *>::iterator it = std::find_if(_users.begin(), _users.end(), FindByFD(_fds[i].fd));
-                removeUser(_users, (*it)->getFd());
-                break;
-            }
+			else if ((_fds[i].revents & POLLHUP) == POLLHUP)
+			{
+				std::vector<User *>::iterator it = std::find_if(_users.begin(), _users.end(), FindByFD(_fds[i].fd));
+				removeUser(_users, (*it)->getFd());
+				break;
+			}
 		}
 	}
 }
@@ -434,8 +443,6 @@ void	Server::shutdownServer()
 		std::cout << CYAN << "Server successfully shut down!" << RESET << std::endl;
 	}
 }
-
-void	Server::setServerName(std::string serverName) { this->_serverName = serverName; }
 
 void	Server::execMessage(User *user)
 {
