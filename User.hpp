@@ -17,26 +17,30 @@ class User
 		std::string 				_realname;
 		std::string 				_nickname;
 		std::string 				_username;
+		std::string					_userIP;
 		std::string					_userHost;
 
 	public:
+		User(int fd, std::string userIP, std::string userHost);
+		~User();
+
 		std::vector<std::string>		_incomingMsgs;
 		// std::deque<std::string>		outgoingmsg;
 		// std::deque<std::string>		messageDeque;
-		User(int fd);
-		~User();
 
-		int     					getFd() const;
 		void        				closeSocket();
+		int     					getFd() const;
 
 		std::string 				getNickname() const;
 		std::string 				getUsername() const;
+		std::string					getUserIP() const;
 		std::string					getUserHost() const;
 		std::string					getBuffer() const;
 		bool 						getIsAuth() const;
 
 		void 						setNickname(std::string nickname);
 		void 						setUsername(std::string username);
+		void						setUserIP(std::string userIP);
 		void						setUserHost(std::string userHost);
 		void 						setIsAuth(bool isAuth);
 

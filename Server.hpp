@@ -28,8 +28,7 @@
 const int MAX_CLIENTS = 4096;
 
 class User;
-class Server;
-
+class Server; // to use static signal and shutdown functions
 extern Server* globalServerInstance; // to use static signal and shutdown functions
 
 enum e_commands
@@ -53,6 +52,7 @@ class Server
     private:
         // char            _buffer[4096];
 
+		std::string     _serverName;
         std::string     _password;
         int             _port;
         bool            _disconnect;
@@ -77,6 +77,7 @@ class Server
 		void 				welcomeMsg(User *user);
 		void 				execMessage(User *user);
 		int 				checkDupNickname(std::vector<User *> users, std::string nickname);
+		void				setServerName(std::string serverName);
 
 		static void			sigIntHandler(int signal);
 		static void			sigTermHandler(int signal);

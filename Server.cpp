@@ -71,7 +71,7 @@ int	isCommand(std::string command)
 		return (TOPIC);
 	if (command == "MODE")
 		return (MODE);
-	if (command == "QUIT" || "/QUIT")
+	if (command == "QUIT" || command == "/QUIT")
 		return (QUIT);
 	return (NOTCOMMAND);
 }
@@ -107,7 +107,7 @@ void	Server::authenticateUser(int i)
 			if ((*it)->_incomingMsgs[i] == "USER")
 			{
 				(*it)->setUsername((*it)->_incomingMsgs[i + 1]); // user name
-				(*it)->setUserHost((*it)->_incomingMsgs[i + 3]); // user host
+				setServerName((*it)->_incomingMsgs[i + 3]); // server name
 			}
 			if (!(*it)->getIsAuth() && (!(*it)->getNickname().empty()) &&
 				(!(*it)->getUsername().empty()) && (!(*it)->getUserHost().empty()))
@@ -124,8 +124,8 @@ void Server::runServer()
 	int optval = 1;
 	int sockfd = createSocket();
 
-	signal(SIGINT, Server::sigIntHandler);
-	signal(SIGTERM, Server::sigTermHandler);
+	// signal(SIGINT, Server::sigIntHandler);
+	// signal(SIGTERM, Server::sigTermHandler);
 	bindSocket(sockfd);
 	listenSocket(sockfd);
 	if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char *>(&optval), sizeof(optval)) < 0)
@@ -140,6 +140,8 @@ void Server::runServer()
 	{
 		if (_disconnect)
 			break;
+		signal(SIGINT, Server::sigIntHandler);
+		signal(SIGTERM, Server::sigTermHandler);
 		// int poll(representing a FD, number of FD, timeout);
 		int numFds = poll(_fds.data(), _fds.size(), -1);
 		if (numFds == -1)
@@ -154,10 +156,7 @@ void Server::runServer()
 				{
 					// New client connection and add it to "users, _fds" vectors
 					int clientFd = acceptConection(sockfd);
-					pollfd tmp2 = {clientFd, POLLIN, 0};
-					_fds.push_back(tmp2);
-					_users.push_back(new User(clientFd));
-					std::cout << "User has been created with class User FD:" << _users[i]->getFd() << std::endl; // for debugging -> create class User
+					std::cout << MAGENTA << "DEBUG:: User has been created with class User FD:" << _users[i]->getFd() << RESET << std::endl; // debugging -> create class User
 					std::string firstServerMsg = "CAP * ACK multi-prefix\r\n";
 					send(clientFd, firstServerMsg.c_str(), firstServerMsg.length(), 0);
                     std::cout << BLUE << "new client connected FD:" << clientFd << RESET << std::endl;
@@ -191,11 +190,12 @@ void Server::runServer()
 							//debugging, delete it before submit
 							if (((*it)->getIsAuth() && !(*it)->getNickname().empty()) && (!(*it)->getUsername().empty()) && \
 									(!(*it)->getUserHost().empty())) {
-								std::cout << "<SERVER`S DATA>" << "\n";
-								std::cout << "Password - " << _password << "\n";
-								std::cout << "NickName - "<< (*it)->getNickname() << "\n";
-								std::cout << "UserName - "<< (*it)->getUsername() << "\n";
-								std::cout << "UserHost - "<< (*it)->getUserHost() << "\n";
+								std::cout << GREEN << "<<< AUTHORIZED SUCCESS!!! >>>\n";
+								std::cout << "USER \t\t\t- FD:"<< (*it)->getFd() << "\n";
+								std::cout << "NickName \t\t- "<< (*it)->getNickname() << "\n";
+								std::cout << "UserName \t\t- "<< (*it)->getUsername() << "\n";
+								std::cout << "UserIP \t\t\t- "<< (*it)->getUserIP() << "\n";
+								std::cout << "UserHost \t\t- "<< (*it)->getUserHost() << RESET << "\n";
 							}
 						}
 						if (isCommand((*it)->_incomingMsgs[0]) != NOTCOMMAND)
@@ -225,6 +225,15 @@ void Server::runServer()
 									std::string pong = "PONG\r\n";
 									send((*it)->getFd(), pong.c_str(), pong.length(), 0);
 									std::cout << "PONG has been sent to " << (*it)->getNickname() << std::endl;
+
+									std::cout << "\nSERVER`S DATA:" << "\n";
+									std::cout << "Server Password \t" << _password << "\n";
+									std::cout << "Server Name \t\t" << _serverName << "\n\n";
+									std::cout << "UserFD \t\t\t" << (*it)->getFd() << "\n";
+									std::cout << "NickName \t\t" << (*it)->getNickname() << "\n";
+									std::cout << "UserName \t\t" << (*it)->getUsername() << "\n";
+									std::cout << "UserIP \t\t\t" << (*it)->getUserIP() << "\n";
+									std::cout << "UserHost \t\t" << (*it)->getUserHost() << "\n";
 									break ;
 								}
 								case QUIT:
@@ -254,10 +263,7 @@ void Server::runServer()
 								}
 								default:
 								{
-									std::cout << GREEN << "USER FD:" + std::to_string((*it)->getFd()) + " AUTHORIZED SUCCESS!!!" << "\n";
-									std::cout << "NickName - "<< (*it)->getNickname() << "\n";
-									std::cout << "UserName - "<< (*it)->getUsername() << "\n";
-									std::cout << "UserHost - "<< (*it)->getUserHost() << RESET << "\n";
+
 								}
 							}
 						}
@@ -322,7 +328,7 @@ void Server::listenSocket(int sockfd)
 
 int Server::acceptConection(int sockfd)
 {
-	struct sockaddr_in clientAddr; // hold clientAddr information
+	struct sockaddr_storage clientAddr; // hold clientAddr information
 	std::memset(&clientAddr, 0, sizeof(clientAddr));
 	socklen_t clientLen = sizeof(clientAddr);
 	// int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
@@ -332,34 +338,64 @@ int Server::acceptConection(int sockfd)
 		std::cerr << RED << "Failed to accept << " << RESET << std::endl;
 		exit(EXIT_FAILURE);
 	}
-	std::cout << GREEN << "Successfully accept " << RESET << std::endl;
+
+	char	clientIP[INET6_ADDRSTRLEN];
+	char	clientHost[NI_MAXHOST];
+
+	if (clientAddr.ss_family == AF_INET)
+	{
+		struct sockaddr_in *ipv4 = (struct sockaddr_in *)&clientAddr;
+		inet_ntop(AF_INET, &(ipv4->sin_addr), clientIP, INET_ADDRSTRLEN);
+	}
+	else if (clientAddr.ss_family == AF_INET6)
+	{
+		struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)&clientAddr;
+		inet_ntop(AF_INET6, &(ipv6->sin6_addr), clientIP, INET6_ADDRSTRLEN);
+	}
+	else
+	{
+		std::cout << "Unknown address family" << std::endl;
+		return -1;
+	}
+
+	int result = getnameinfo((struct sockaddr *)&clientAddr, clientLen, clientHost, NI_MAXHOST, NULL, 0, NI_NUMERICSERV);
+    if (result != 0)
+    {
+        std::cerr << "Error getting hostname: " << gai_strerror(result) << std::endl;
+        std::strcpy(clientHost, "Unknown");
+    }
+    std::cout << GREEN << "\nSuccessfully accepted connection from " << clientIP << " (Hostname: " << clientHost << ")" << RESET << std::endl;
+
+	pollfd tmp2 = {clientFd, POLLIN, 0};
+	_fds.push_back(tmp2);
+	_users.push_back(new User(clientFd, clientIP, clientHost));
+
 	return clientFd; // Return the new socket descriptor for communication with the client.
 }
 
 void Server::removeUser(std::vector<User *> &users, int fd)
 {
-    // Удаление пользователя из списка пользователей
-    std::vector<User *>::iterator itUser = std::find_if(users.begin(), users.end(), FindByFD(fd));
-	std::cout << RED << "Clent FD:" << (*itUser)->getFd() << " has left!!!\n" << RESET;
-    if (itUser != users.end())
-    {
-        (*itUser)->closeSocket();
-        users.erase(itUser);
-        delete *itUser;
-    }
-    // Удаление файлового дескриптора из _fds
-    std::vector<struct pollfd>::iterator itFd = std::find_if(_fds.begin(), _fds.end(), FindByFD(fd));
-    if (itFd != _fds.end())
-    {
-        _fds.erase(itFd);
-    }
+	// Удаление пользователя из списка пользователей
+	std::vector<User *>::iterator itUser = std::find_if(users.begin(), users.end(), FindByFD(fd));
+	if (itUser != users.end())
+	{
+		(*itUser)->closeSocket();
+		users.erase(itUser);
+		delete *itUser;
+	}
+	// Удаление файлового дескриптора из _fds
+	std::vector<struct pollfd>::iterator itFd = std::find_if(_fds.begin(), _fds.end(), FindByFD(fd));
+	if (itFd != _fds.end())
+	{
+		_fds.erase(itFd);
+	}
 	std::cout << GREEN << "User has been removed from the server!" << RESET << std::endl;
 }
 
 //====================================<SIGNALS && SHUTDOWN>====================================
 
 // Обработчик для SIGINT
-void Server::sigIntHandler(int signal)
+void	Server::sigIntHandler(int signal)
 {
 	std::cout << YELLOW << "\nReceived SIGINT (Ctrl+C) signal: " << signal << RESET << std::endl;
 	if (globalServerInstance)
@@ -369,7 +405,7 @@ void Server::sigIntHandler(int signal)
 }
 
 // Обработчик для SIGTERM
-void Server::sigTermHandler(int signal)
+void	Server::sigTermHandler(int signal)
 {
 	std::cout << YELLOW << "\nReceived SIGTERM signal: " << signal << RESET << std::endl;
 	if (globalServerInstance)
@@ -379,7 +415,7 @@ void Server::sigTermHandler(int signal)
 }
 
 // Метод для корректного завершения работы сервера
-void Server::shutdownServer()
+void	Server::shutdownServer()
 {
 	std::cout << CYAN << "Shutting down server..." << RESET << std::endl;
 	if (globalServerInstance)
@@ -399,7 +435,9 @@ void Server::shutdownServer()
 	}
 }
 
-void Server::execMessage(User *user)
+void	Server::setServerName(std::string serverName) { this->_serverName = serverName; }
+
+void	Server::execMessage(User *user)
 {
 	std::string message = user->_incomingMsgs[0];
 	if (message == "PING")

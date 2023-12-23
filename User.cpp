@@ -1,29 +1,29 @@
 #include "User.hpp"
 #include "Server.hpp"
 
-User::User(int fd) : _fd(fd)
+User::User(int fd, std::string userIP, std::string userHost) : _fd(fd), _userIP(userIP), _userHost(userHost)
 {
     this->_isAuth = false;
     this->_isOP = false;
     this->_buffer = "";
     this->_nickname = "";
     this->_username = "";
-    this->_userHost = "";
     this->_realname = "";
+    std::cout << MAGENTA << "DEBUG:: " << _userIP << "    " << _userHost << RESET << "\n"; //debugging - delete before submit
 }
 
-int User::getFd() const { return (_fd); }
+int         User::getFd() const { return (_fd); }
 std::string User::getNickname() const { return (_nickname); }
 std::string User::getUsername() const { return (_username); }
+std::string User::getUserIP() const { return (_userIP); }
 std::string User::getUserHost() const { return (_userHost); }
 std::string User::getBuffer() const { return _buffer; }
-bool User::getIsAuth() const { return (_isAuth); }
+bool        User::getIsAuth() const { return (_isAuth); }
 
-void User::setNickname(std::string nickname) { this->_nickname = nickname; }
-void User::setUsername(std::string username) { this->_username = username; }
-void User::setUserHost(std::string userHost) { this->_userHost = userHost; }
-void User::setIsAuth(bool isAuth) { this->_isAuth = isAuth; }
-
+void        User::setNickname(std::string nickname) { this->_nickname = nickname; }
+void        User::setUsername(std::string username) { this->_username = username; }
+void        User::setUserHost(std::string userHost) { this->_userHost = userHost; }
+void        User::setIsAuth(bool isAuth) { this->_isAuth = isAuth; }
 
 void User::closeSocket()
 {
