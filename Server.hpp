@@ -21,6 +21,7 @@
 #include <arpa/inet.h> //htons
 #include <sys/socket.h>
 #include "User.hpp"
+#include "Channel.hpp"
 #include <csignal>
 
 #include <netinet/in.h>
@@ -28,6 +29,7 @@
 const int MAX_CLIENTS = 4096;
 
 class User;
+class Channel;
 class Server; // to use static signal and shutdown functions
 extern Server* globalServerInstance; // to use static signal and shutdown functions
 
@@ -73,8 +75,9 @@ class Server
 		void				setServerName(std::string serverName);
 		void				welcomeMsg(User *user);
 
-		std::vector<User *>	_users;
-		std::vector<pollfd>	_fds;
+		std::vector<pollfd>		_fds;
+		std::vector<User *>		_users;
+		std::vector<Channel *>	_channels;
 		// void				createNewUser(int fd);
 
 		void 				execMessage(User *user);

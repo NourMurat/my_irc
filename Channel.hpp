@@ -1,41 +1,100 @@
 #pragma once
 
-#include <stdio.h>
-#include <string>
+// #include "Server.hpp"
+// #include "User.hpp"
 #include <map>
-#include <exception>
-#include <vector>
-#include "User.hpp"
-#include "Server.hpp"
+#include <string>
 
 class User;
-class Channel
-{
-	private:
-		std::string							_key;
-		std::string							_channelName;
-		std::string							_topic;
-		bool								_isInviteOnly;
-		unsigned int						_maximumUsers;
-	public:
-		std::map<char, bool>				_mode;
-		std::vector<User *>					_liveUsers;
-		// std::map<User *, bool>					_liveUsers;
-		std::vector<User *>					_operators;
-		std::vector<User *>					_invitedUsers;
 
-		Channel (std::string name);
-		Channel (std::string name, std::string key);
-		~Channel();
-		std::string 		getName() const;
-		std::string 		getTopic() const;
-		std::string 		getKey() const;
-		std::map<char, bool>getMode() const;
-		unsigned int		getMaximumUsers() const;
-		void				setName(std::string name);
-		void				setTopic(std::string topic);
-		void				setKey(std::string key);
-		void				setMaximumUsers(unsigned int maximumUsers);
-		std::vector<User *> getLiveUsers() const;
-		void				setMode(std::map<char, bool> mode);
+class Channel 
+{
+	// A client_iterator synonym is created to make the code easier to read	
+	typedef std::map<std::string, User*>::iterator client_iterator;
+
+private:
+	std::string		name; //name of the channel
+	std::string 	pass; //password to join the channel
+	std::string		topic; // topic of the channel
+	User*			owner; //A pointer to the User who is the owner of the channel
+	size_t 			limit; //The limit on the number of members allowed in the channel
+	bool 			inviteOnly; // A Boolean flag indicating whether the channel is by invitation or not
+	// bool l;
+	// bool o;
+	// bool k;
+	// bool t;
+
+	// Channel();
+
+public:
+	Channel( std::string, User*);
+	~Channel();
+
+	/* maps as private class members will be initialized
+	with null by the Constructor when the Class is created */
+	std::map<std::string, User *> members;
+	std::map<std::string, User *> invited;
+	std::map<std::string, User *> operators;
+	std::map<std::string, User *> banned;
+	
+/* Getters */
+
+    std::string		getName() const;
+    std::string		getPass() const;
+	std::string		getTopic() const;
+	User*			getOwner() const;
+    size_t			getLimit() const;
+    size_t			getSize() const;
+
+	// Get a maps of all channel members, as well as a list of invited Users, 
+	// all operators and banned cUsers
+    const std::map<std::string, User *>&	getMembers() const;
+	const std::map<std::string, User *>&	getInvited() const;
+    const std::map<std::string, User *>&	getOperators() const;
+	const std::map<std::string, User *>&	getBanned() const;
+
+
+/* Setters */
+//if you want to change name, password, topic or limits
+	void		setName(std::string nameValue);
+	void		setPass(std::string passValue);
+	void		setTopic(std::string topicValue);
+	void		setLimit(size_t limitValue);
+	void		setInviteOnly(bool value);
+
+
+/* Channel Methods */
+
+	bool		isInviteOnly() const;
+	bool 		checkPassword(const std::string& password) const;
+	bool        isMember(User* client) const;
+	bool        isOperator(User* client) const;
+	bool		isInvited(User* client) const;
+	bool		isOwner(User* client) const;
+	bool 		isEmpty() const;
+	bool		hasUserLimit() const;
+	bool		hasChannelKey() const;
+	bool		hasTopicRestrictions() const;
+
+	// Add the corresponding Users to the maps we need
+	void 		addMember(User* client);
+	void 		addInvited(User* client);
+	void 		addOperator(User* client, User* invoker);
+	void 		addBanned(User* client, User* invoker, const std::string& reason);
+
+	// Remove the corresponding Users from the map we need
+	void 		removeMember(User* client);
+	void 		removeOperator(User* client);
+	void 		removeInvited(User* client);
+	void 		removeBanned(User* client);
+	void		removeUserLimit();
+	void		removeChannelKey();
+	void		removeTopicRestrictions();
+
+	//sends a message to all Users
+    void		broadcast(const std::string& message);
+	//sedns a message to all Users except a specific User(s)
+    void		broadcast(const std::string& message, User* exclude);
+    void		kick(User* client, User* target, const std::string& reason);
+		
 };

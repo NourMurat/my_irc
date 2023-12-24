@@ -45,13 +45,13 @@ int Server::checkDupNickname(std::vector<User *> users, std::string nickname)
 void Server::welcomeMsg(User *user)
 {
 	std::string welcomeMsg;
-	welcomeMsg = ":IRC 001 " + _serverName + " :Welcome to the Internet Relay Network " + user->getNickname() + "\r\n";
+	welcomeMsg = ":IRC 001 " + _serverName + "!" + user->getNickname() + "@" + user->getUserHost() + " :Welcome to the Internet Relay Network " + user->getNickname() + "\r\n";
 	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
-	welcomeMsg = ":IRC 002 " + _serverName + " :Your host is " + _serverName + ", running version V1.0\r\n";
+	welcomeMsg = ":IRC 002 " + _serverName + "!" + user->getNickname() + "@" + user->getUserHost() + " :Your host is " + _serverName + ", running version V1.0\r\n";
 	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
-	welcomeMsg = ":IRC 003 " + _serverName + " :This server was created in December 2023\r\n";
+	welcomeMsg = ":IRC 003 " + _serverName + "!" + user->getNickname() + "@" + user->getUserHost() + " :This server was created in December 2023\r\n";
 	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
-	welcomeMsg = ":IRC 004 " + _serverName + " :<servername> <version> <available user modes> <available channel modes>\r\n";
+	welcomeMsg = ":IRC 004 " + _serverName + "!" + user->getNickname() + "@" + user->getUserHost() + " :<servername> <version> <available user modes> <available channel modes>\r\n";
 	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
 }
 
@@ -231,8 +231,9 @@ void Server::runServer()
 									std::cout << "PONG has been sent to " << (*it)->getNickname() << std::endl;
 
 									std::cout << "\nSERVER`S DATA:" << "\n";
-									std::cout << "Server Password \t" << _password << "\n";
-									std::cout << "Server Name \t\t" << _serverName << "\n\n";
+									std::cout << "Server`s PORT \t\t" << _port << "\n";
+									std::cout << "Server`s PASSWORD \t" << _password << "\n";
+									std::cout << "Server`s NAME \t\t" << _serverName << "\n\n";
 									std::cout << "UserFD \t\t\t" << (*it)->getFd() << "\n";
 									std::cout << "NickName \t\t" << (*it)->getNickname() << "\n";
 									std::cout << "UserName \t\t" << (*it)->getUsername() << "\n";
@@ -264,6 +265,27 @@ void Server::runServer()
 										}
 										break ;
 									}
+								}
+								case JOIN:
+								{
+									if ((*it)->_incomingMsgs.size() < 2)
+										break ;
+									if ((*it)->_incomingMsgs[1][0] != '#')
+										(*it)->_incomingMsgs[1].insert(0, "#");
+									Channel *newChannel = new Channel((*it)->_incomingMsgs[1], (*it));
+									std::cout << MAGENTA << "DEBUG:: Channel created - " << newChannel->getName() << RESET << "\n";
+									if (!newChannel)
+										break ;
+									_channels.push_back(newChannel);
+									newChannel->addMember(*it);
+									std::string msg = ":IRC 332 " + (*it)->getNickname() + " " + newChannel->getName() + " " + newChannel->getTopic() + "\r\n";
+									send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+									for (size_t i = 0; i < newChannel->members.size() ; ++i)
+									{
+										std::string msg2 = ":" + (*it)->getNickname() + " JOIN " + newChannel->getName() + " \r\n";
+										send(newChannel->members.at((*it)->getNickname())->getFd(), msg2.c_str(), msg2.length(), 0);
+									}
+									break ;
 								}
 								case PART:
 								{

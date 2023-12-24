@@ -1,5 +1,5 @@
 #include "User.hpp"
-#include "Server.hpp"
+// #include "Server.hpp"
 
 User::User(int fd, std::string userIP, std::string userHost) : _fd(fd), _userIP(userIP), _userHost(userHost)
 {
@@ -9,7 +9,7 @@ User::User(int fd, std::string userIP, std::string userHost) : _fd(fd), _userIP(
     this->_nickname = "";
     this->_username = "";
     this->_realname = "";
-    std::cout << MAGENTA << "DEBUG:: " << _userIP << "    " << _userHost << RESET << "\n"; //debugging - delete before submit
+    std::cout << "DEBUG:: " << _userIP << "    " << _userHost << "\n"; //debugging - delete before submit
 }
 
 int         User::getFd() const { return (_fd); }
@@ -113,4 +113,30 @@ void User::addMessage(std::string msg)
 void User::parse(std::string msg)
 {
     (void)msg;
+}
+
+// Method for adding a User to a channel
+void	User::joinChannel(const std::string& channelName, Channel* channel)
+{
+	channelsOfClient[channelName] = channel;
+}
+		
+//Method for removing a User from a channel
+void	User::removeChannelOfClient(const std::string& channelName)
+{
+	channelsOfClient.erase(channelName);
+}
+		
+// Method to get the list of channels the User is connected to
+const std::map<std::string, Channel*>&      User::getChannelsOfClient() const
+{
+	return channelsOfClient;
+}
+
+// sends a message over an open socket
+void	User::write(const std::string& message) const
+{
+    std::string buffer = message + "\r\n";
+    if (send(_fd, buffer.c_str(), buffer.length(), 0) < 0)
+        throw std::runtime_error("Error while sending a message to a client!");
 }

@@ -6,6 +6,11 @@
 #include <algorithm>
 #include <deque>
 #include <sstream>
+#include <map>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include "Channel.hpp"
+// #include "Server.hpp"
 
 class User
 {
@@ -23,6 +28,9 @@ class User
 	public:
 		User(int fd, std::string userIP, std::string userHost);
 		~User();
+
+		// Channels in which the client is a member
+		std::map<std::string, Channel*> channelsOfClient;
 
 		std::vector<std::string>		_incomingMsgs;
 		// std::deque<std::string>		outgoingmsg;
@@ -56,4 +64,17 @@ class User
 		bool operator==(const User& other) const { // if find_if is not in cpp 98, change it
 			return (this->_fd == other._fd);
 		}
+
+		// Method for adding a client to a channel
+		void						joinChannel(const std::string& channelName, Channel* channel);
+		
+		//Method for removing a client from a channel
+		void						removeChannelOfClient(const std::string& channelName);
+		
+		// Method to get the list of channels the client is connected to
+		const std::map<std::string, Channel*>&		getChannelsOfClient() const;
+		
+		// sends a message over an open socket
+		void						write(const std::string& message) const;
+
 };
