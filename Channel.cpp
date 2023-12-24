@@ -16,7 +16,7 @@ Channel::~Channel() {}
 std::string     Channel::getName() const { return name; }
 std::string     Channel::getPass() const { return pass; }
 std::string     Channel::getTopic() const { return topic; }
-User*         Channel::getOwner() const { return owner; }
+User*           Channel::getOwner() const { return owner; }
 size_t          Channel::getLimit() const { return limit; }
 size_t          Channel::getSize()const { return members.size(); }
 
@@ -75,7 +75,10 @@ void        Channel::addMember(User* client)
 
     if (members.find(client->getNickname()) == members.end()) 
     {
+        // if (members.find(client->getNickname()) == owner)
+        //     return;
         members[client->getNickname()] = client;
+        std::cout << "DEBUGG:: ADD TO MEMBER IN THE NEW CHANNEL!!!" << members[client->getNickname()] << "\n";
     }
 }
 

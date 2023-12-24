@@ -33,11 +33,15 @@ class User
 		std::map<std::string, Channel*> channelsOfClient;
 
 		std::vector<std::string>		_incomingMsgs;
-		// std::deque<std::string>		outgoingmsg;
+		std::vector<std::string>		_outgoingMsgs;
 		// std::deque<std::string>		messageDeque;
 
 		void        				closeSocket();
 		int     					getFd() const;
+
+		std::vector<std::string> & 	getOutgoingMsg();
+	    void 						setOutgoingMsg( std::string msg );
+		void 						printOutgoingMsgs();
 
 		std::string 				getNickname() const;
 		std::string 				getUsername() const;

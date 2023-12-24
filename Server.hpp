@@ -87,6 +87,7 @@ class Server
 		static void			sigTermHandler(int signal);
 		static void			shutdownServer();
 		void				authenticateUser(int i);
+		Channel*			getChannel(std::string name);
 
 };
 
@@ -110,6 +111,9 @@ struct FindByNickname
     FindByNickname(const std::string &nick) : nick(nick) { }
     bool operator()(const User *user) const {
         return user->getNickname() == nick;
+    }
+	bool operator()(const std::pair<const std::string, User*>& pair) const {
+        return pair.second->getNickname() == nick;
     }
 };
 

@@ -37,7 +37,7 @@ void User::closeSocket()
 User::~User()
 {
     this->_incomingMsgs.clear();
-    // this->outgoingmsg.clear();
+    this->_outgoingMsgs.clear();
     closeSocket();
 }
 
@@ -99,6 +99,20 @@ void User::splitAndProcess(const std::string &data)
 }
 
 //---------------------------------------------------------------------------------------------
+
+std::vector<std::string> & User::getOutgoingMsg() {
+    return _outgoingMsgs;
+}
+
+void User::setOutgoingMsg( std::string msg ) {
+    _outgoingMsgs.push_back( msg );
+}
+
+void User::printOutgoingMsgs() {
+    for (std::vector<std::string>::const_iterator it = _outgoingMsgs.begin(); it != _outgoingMsgs.end(); ++it) {
+        std::cout << "OutgoingMsg: " << *it << std::endl;
+    }
+}
 
 void User::addMessage(std::string msg)
 {
