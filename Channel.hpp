@@ -2,6 +2,7 @@
 
 // #include "Server.hpp"
 // #include "User.hpp"
+#include "irc.hpp"
 #include <map>
 #include <string>
 

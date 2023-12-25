@@ -9,6 +9,8 @@
 #include <map>
 #include <sys/types.h>
 #include <sys/socket.h>
+
+#include "irc.hpp"
 #include "Channel.hpp"
 // #include "Server.hpp"
 

@@ -9,7 +9,7 @@ User::User(int fd, std::string userIP, std::string userHost) : _fd(fd), _userIP(
     this->_nickname = "";
     this->_username = "";
     this->_realname = "";
-    std::cout << "DEBUG:: " << _userIP << "    " << _userHost << "\n"; //debugging - delete before submit
+    std::cout << MAGENTA << "DEBUG:: " << _userIP << "    " << _userHost << RESET << "\n"; //debugging - delete before submit
 }
 
 int         User::getFd() const { return (_fd); }

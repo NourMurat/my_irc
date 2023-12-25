@@ -78,7 +78,7 @@ void        Channel::addMember(User* client)
         // if (members.find(client->getNickname()) == owner)
         //     return;
         members[client->getNickname()] = client;
-        std::cout << "DEBUGG:: ADD TO MEMBER IN THE NEW CHANNEL!!!" << members[client->getNickname()] << "\n";
+        std::cout << MAGENTA << "DEBUGG:: ADD MEMBER (" << members[client->getNickname()]->getNickname() << ") IN THE NEW CHANNEL (" << getName() << ") !!!" << RESET << "\n";
     }
 }
 

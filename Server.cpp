@@ -55,13 +55,13 @@ int Server::checkDupNickname(std::vector<User *> users, std::string nickname)
 void Server::welcomeMsg(User *user)
 {
 	std::string welcomeMsg;
-	welcomeMsg = ":IRC 001 " + _serverName + "!" + user->getNickname() + "@" + user->getUserHost() + " :Welcome to the Internet Relay Network " + user->getNickname() + "\r\n";
+	welcomeMsg = ":IRC 001 " + user->getNickname() + " :Welcome to the Internet Relay Network " + user->getNickname() + "\n";
 	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
-	welcomeMsg = ":IRC 002 " + _serverName + "!" + user->getNickname() + "@" + user->getUserHost() + " :Your host is " + _serverName + ", running version V1.0\r\n";
+	welcomeMsg = ":IRC 002 " + user->getNickname() + " :Your host is " + _serverName + ", running version V1.0\n";
 	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
-	welcomeMsg = ":IRC 003 " + _serverName + "!" + user->getNickname() + "@" + user->getUserHost() + " :This server was created in December 2023\r\n";
+	welcomeMsg = ":IRC 003 " + user->getNickname() + " :This server was created in December 2023\n";
 	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
-	welcomeMsg = ":IRC 004 " + _serverName + "!" + user->getNickname() + "@" + user->getUserHost() + " :<servername> <version> <available user modes> <available channel modes>\r\n";
+	welcomeMsg = ":IRC 004 " + user->getNickname() + " :<servername> <version> <available user modes> <available channel modes>\n";
 	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
 }
 
@@ -315,7 +315,7 @@ void Server::runServer()
 									{
 										std::cout << MAGENTA << "DEBUGG:: New CHAN" << RESET << "\n";
 										Channel *newChannel = new Channel((*it)->_incomingMsgs[1], (*it));
-										std::cout << MAGENTA << "DEBUG:: Channel created - " << newChannel->getName() << RESET << "\n";
+										std::cout << MAGENTA << "DEBUGG:: Channel created - " << newChannel->getName() << RESET << "\n";
 										if (!newChannel)
 											break ;
 										_channels.push_back(newChannel);
@@ -340,9 +340,9 @@ void Server::runServer()
 								case MSG:
 								case PRIVMSG:
 								{
-									std::cout << MAGENTA << "DEBUGG:: PRIV" << RESET << "\n";
 									if ((*it)->_incomingMsgs[1][0] != '#')
 									{
+										std::cout << MAGENTA << "DEBUGG:: PRIV" << RESET << "\n";
 										std::vector<User *>::iterator itReceiver = std::find_if(_users.begin(), _users.end(), FindByNickname((*it)->_incomingMsgs[1]));
 										std::string msg = (*it)->_incomingMsgs[2];
 										if ((*itReceiver)->getFd() != -1)
@@ -367,9 +367,12 @@ void Server::runServer()
 												{
 													std::cout << MAGENTA << "DEBUGG:: PRIV CHAN" << RESET << "\n";
 													userIsInChannel = true;
-													std::string msg = ":" + _serverName + " PRIVMSG " + (*it)->_incomingMsgs[2] + "\r\n";
+													std::string chanMSG = (*it)->_incomingMsgs[2];
+													for (unsigned int i = 3; i < (*it)->_incomingMsgs.size(); i++)
+														chanMSG += " " + (*it)->_incomingMsgs[i];
+													std::string msg = ":" + (*it)->getNickname() + " PRIVMSG " + (*itChannel)->getName() + " " + chanMSG + "\r\n";
 													send((*it)->getFd(), msg.c_str(), msg.length(), 0);
-													// for ()
+													(*itChannel)->broadcast(msg, (*it));
 													break;
 												}
 												else if (!userIsInChannel)
