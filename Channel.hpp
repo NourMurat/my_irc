@@ -7,6 +7,7 @@
 #include <string>
 
 class User;
+class Server;
 
 class Channel 
 {
@@ -85,7 +86,7 @@ public:
 	void 		addBanned(User* client, User* invoker, const std::string& reason);
 
 	// Remove the corresponding Users from the map we need
-	void 		removeMemberOrOperatorFromChannel(User* client);
+	int 		removeUserFromChannel(User* client);
 	// void		removeOperatorFromChannel(User* client);
 	void 		takeOperatorPrivilege(User* client);
 	void 		removeInvited(User* client);
@@ -93,6 +94,7 @@ public:
 	void		removeUserLimit();
 	void		removeChannelKey();
 	void		removeTopicRestrictions();
+	void		removeOwnerFromChannel();
 
 	//sends a message to all Users
     void		broadcast(const std::string& message);

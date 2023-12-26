@@ -23,7 +23,7 @@
 const int MAX_CLIENTS = 4096;
 
 class User;
-class Channel;
+// class Channel;
 class Server; // to use static signal and shutdown functions
 extern Server* globalServerInstance; // to use static signal and shutdown functions
 
@@ -67,6 +67,7 @@ class Server
 		void				listenSocket(int sockfd);
 		int					acceptConection(int sockfd);
 		void				removeUser(std::vector<User *>& users, int fd);
+		void				removeChannelFromServer(std::string name);
 
 		std::string			getServerName() const;
 		void				setServerName(std::string serverName);

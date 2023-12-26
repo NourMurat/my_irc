@@ -1,5 +1,7 @@
 #include "Channel.hpp"
 #include "User.hpp"
+#include <cstdlib> // Для rand() и srand()
+#include <ctime>   // Для time()
 
 
 /* Constructor and Destructor */
@@ -127,13 +129,13 @@ void        Channel::addBanned(User* client, User* invoker, const std::string& r
 }
 
 // Removing a member from map members
-void        Channel::removeMemberOrOperatorFromChannel(User* client) 
+int        Channel::removeUserFromChannel(User* client) 
 {
     client_iterator itMember = members.find(client->getNickname());
     operator_iterator itOperator = operators.find(client->getNickname());
     if (itMember != members.end()) 
     {
-        std::cout << MAGENTA << "DEBUGG:: REMOVE MEMBER (" << members[client->getNickname()]->getNickname() << ") IN THE NEW CHANNEL (" << getName() << ") !!!" << RESET << "\n";
+        std::cout << MAGENTA << "DEBUGG:: REMOVE MEMBER (" << members[client->getNickname()]->getNickname() << ") IN THE CHANNEL (" << getName() << ") !!!" << RESET << "\n";
         std::string channelMsg = ":" + client->getNickname() + " PART " + name + " :leaving" + "\r\n";
 		broadcast(channelMsg, client);
         members.erase(itMember);
@@ -144,7 +146,7 @@ void        Channel::removeMemberOrOperatorFromChannel(User* client)
     }
     else if (itOperator != operators.end())
     {
-        std::cout << MAGENTA << "DEBUGG:: REMOVE MEMBER (" << operators[client->getNickname()]->getNickname() << ") IN THE NEW CHANNEL (" << getName() << ") !!!" << RESET << "\n";
+        std::cout << MAGENTA << "DEBUGG:: REMOVE OPERATOR (" << operators[client->getNickname()]->getNickname() << ") IN THE CHANNEL (" << getName() << ") !!!" << RESET << "\n";
         std::string channelMsg = ":" + client->getNickname() + " PART " + name + " :leaving" + "\r\n";
 		broadcast(channelMsg, client);
         takeOperatorPrivilege(itOperator->second);
@@ -153,8 +155,46 @@ void        Channel::removeMemberOrOperatorFromChannel(User* client)
         // std::string logMessage = client->getNickname() + " has left channel " + name;
         // log(logMessage);
     }
+    else if (owner == client)
+    {
+        std::cout << MAGENTA << "DEBUGG:: REMOVE OWNER (" << owner->getNickname() << ") IN THE CHANNEL (" << name << ") !!!" << RESET << "\n";
+        std::string channelMsg = ":" + client->getNickname() + " PART " + name + " :leaving" + "\r\n";
+        broadcast(channelMsg, client);
+
+        // Если в канале есть операторы
+        if (!operators.empty())
+        {
+            int randomIndex = rand() % operators.size(); // Получаем случайный индекс
+            operator_iterator itOperator = operators.begin();
+            std::advance(itOperator, randomIndex); // Перемещаем итератор на случайную позицию
+            owner = itOperator->second; // Назначаем нового хозяина
+            takeOperatorPrivilege(itOperator->second);
+            std::cout << MAGENTA << "DEBUGG:: (" << owner->getNickname() << ") IS A NEW OWNER IN THE CHANNEL (" << name << ") !!!" << RESET << "\n";
+            std::string channelMsg = ":" + client->getNickname() + " no more owner of the channel (" + name + ") New owner is " + owner->getNickname() + + "\r\n";
+            broadcast(channelMsg, client);
+        }
+        // Если операторов нет, но есть обычные члены
+        else if (!members.empty())
+        {
+            int randomIndex = rand() % members.size(); // Получаем случайный индекс
+            client_iterator itMember = members.begin();
+            std::advance(itMember, randomIndex); // Перемещаем итератор на случайную позицию
+            owner = itMember->second; // Назначаем нового хозяина
+            std::cout << MAGENTA << "DEBUGG:: (" << owner->getNickname() << ") IS A NEW OWNER IN THE CHANNEL (" << name << ") !!!" << RESET << "\n";
+            std::string channelMsg = ":" + client->getNickname() + " no more owner of the channel (" + name + ") New owner is " + owner->getNickname() + + "\r\n";
+            broadcast(channelMsg, client);
+        }
+        // Если хозяин - единственный член канала
+        else
+        {
+            // Логика удаления канала
+            std::cout << MAGENTA << "DEBUGG:: (" << owner->getNickname() << ") IS A NEW OWNER IN THE CHANNEL (" << name << ") !!!" << RESET << "\n";
+            return 1;
+        }
     // Deleting a channel a User is a member of
     client->removeChannelOfClient(name);
+    }
+    return 0;
 }
 
 // Removing an operator from map operators
@@ -304,7 +344,7 @@ void        Channel::kick(User* client, User* target, const std::string& reason)
             broadcast(kickMessage);
 
             // Remove the target from appropriate maps using existing functions
-            if (itMember != members.end()) removeMemberOrOperatorFromChannel(target);
+            if (itMember != members.end()) removeUserFromChannel(target);
             if (itOperator != operators.end()) takeOperatorPrivilege(target);
             if (itInvited != invited.end()) removeInvited(target);
             if (itBanned != banned.end()) removeBanned(target);

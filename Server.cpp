@@ -42,6 +42,18 @@ Server::~Server()
 // 	return NULL;
 // }
 
+void	Server::removeChannelFromServer(std::string name)
+{
+	for (std::vector<Channel *>::iterator it = _channels.begin(); it != _channels.end(); ++it)
+	{
+		if ((*it)->getName() == name)
+		{
+			_channels.erase(it);
+			break ;
+		}
+	}
+}
+
 int Server::checkDupNickname(std::vector<User *> users, std::string nickname)
 {
 	for (std::vector<User *>::iterator it = users.begin(); it != users.end(); ++it)
@@ -357,7 +369,7 @@ void Server::runServer()
 										if (!newChannel)
 											break ;
 										_channels.push_back(newChannel);
-										newChannel->addMember(*it);
+										// newChannel->addMember(*it);
 										std::string msg = ":IRC 332 " + (*it)->getNickname() + " " + newChannel->getName() + " " + newChannel->getTopic() + "\r\n";
 										send((*it)->getFd(), msg.c_str(), msg.length(), 0);
 										// for (size_t i = 0; i < newChannel->members.size() ; ++i)
@@ -519,23 +531,25 @@ void Server::runServer()
 										if ((*itChannel)->getName() == (*it)->_incomingMsgs[1])
 										{
 
-											if ((*itChannel)->getOwner() == (*it)) {
-											// The channel owner cannot PART the channel, need to use the KICK command
-											(*it)->write("482 " + (*it)->getNickname() + " " + (*it)->_incomingMsgs[1] + 
-														" :You're the channel owner, use KICK to leave the channel.");
-											break ;
-											}
+											// if ((*itChannel)->isOwner((*it))) {
+											// // The channel owner cannot PART the channel, need to use the KICK command
+											// (*it)->write("482 " + (*it)->getNickname() + " " + (*it)->_incomingMsgs[1] + 
+											// 			" :You're the channel owner, use KICK to leave the channel.");
 											
-											if ((*itChannel)->isMember((*it)) || (*itChannel)->isOperator((*it)))
-											{
+											// break ;
+											// }
+											
+											// if ((*itChannel)->isMember((*it)) || (*itChannel)->isOperator((*it)))
+											// {
 												std::cout << MAGENTA << "DEBUGG:: PART CHAN" << RESET << "\n";
 												userIsInChannel = true;
 												std::string msg = ":" + (*it)->getNickname() + " PART " + (*itChannel)->getName() + "\r\n";
 												send((*it)->getFd(), msg.c_str(), msg.length(), 0);
-												(*itChannel)->removeMemberOrOperatorFromChannel((*it));
+												if ((*itChannel)->removeUserFromChannel((*it)) == 1)
+													removeChannelFromServer((*itChannel)->getName());
 												break ;
-											}
-											else if (!userIsInChannel)
+											// }
+											if (!userIsInChannel)
 											{
 												std::string error = "ERROR :You're not on that channel\r\n";
 												send((*it)->getFd(), error.c_str(), error.length(), 0);
@@ -547,6 +561,50 @@ void Server::runServer()
 									}
 									break ;
 								}
+								// case KICK:
+								// {
+								// 	if ((*it)->getIsAuth() == false)
+								// 		break;
+								// 	if ((*it)->_incomingMsgs.size() < 3)
+								// 	{
+								// 		std::string error = "ERROR :No channel or user given\r\n";
+								// 		send((*it)->getFd(), error.c_str(), error.length(), 0);
+								// 		break ;
+								// 	}
+								// 	if ((*it)->_incomingMsgs[1][0] != '#')
+								// 		(*it)->_incomingMsgs[1].insert(0, "#");
+								// 	bool userIsInChannel = false;
+								// 	for (std::vector<Channel *>::iterator itChannel = _channels.begin(); itChannel != _channels.end(); ++itChannel)
+								// 	{
+								// 		if ((*itChannel)->getName() == (*it)->_incomingMsgs[1])
+								// 		{
+								// 			if ((!(*itChannel)->isOwner() && !(*itChannel)->isOperator()) || (*it)->_incomingMsgs[2]) == (*itChannel)->getOwner()->getNickname()){
+								// 			// Only the channel owner can KICK a user from the channel
+								// 			(*it)->write((*it)->getNickname() + " " + (*it)->_incomingMsgs[1] + 
+								// 						" :You're not the channel Owner or Operator! .");
+								// 			break ;
+								// 			}
+								// 			if ((*itChannel)->isOwner((*it)) || (*itChannel)->isOperator((*it)))
+								// 			{
+								// 				std::cout << MAGENTA << "DEBUGG:: KICK CHAN" << RESET << "\n";
+								// 				userIsInChannel = true;
+								// 				std::string msg = ":" + (*it)->getNickname() + " KICK " + (*itChannel)->getName() + " " + (*it)->_incomingMsgs[2] + "\r\n";
+								// 				send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+								// 				(*itChannel)->removeMemberOrOperatorFromChannel((*it));
+								// 				break ;
+								// 			}
+								// 			else if (!userIsInChannel)
+								// 			{
+								// 				std::string error = "ERROR :You're not on that channel\r\n";
+								// 				send((*it)->getFd(), error.c_str(), error.length(), 0);
+								// 				break ;
+												
+								// 			}
+								// 			break ;
+								// 		}
+								// 	}
+								// 	break ;
+								// }
 								default:
 								{
 									break;
