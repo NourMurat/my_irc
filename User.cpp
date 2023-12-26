@@ -5,6 +5,7 @@ User::User(int fd, std::string userIP, std::string userHost) : _fd(fd), _userIP(
 {
     this->_isAuth = false;
     this->_isOP = false;
+    this->_password = "";
     this->_buffer = "";
     this->_nickname = "";
     this->_username = "";
@@ -18,12 +19,14 @@ std::string User::getUsername() const { return (_username); }
 std::string User::getUserIP() const { return (_userIP); }
 std::string User::getUserHost() const { return (_userHost); }
 std::string User::getBuffer() const { return _buffer; }
+std::string User::getPassword() const { return _password; }
 bool        User::getIsAuth() const { return (_isAuth); }
 
 void        User::setNickname(std::string nickname) { this->_nickname = nickname; }
 void        User::setUsername(std::string username) { this->_username = username; }
 void        User::setUserHost(std::string userHost) { this->_userHost = userHost; }
 void        User::setIsAuth(bool isAuth) { this->_isAuth = isAuth; }
+void        User::setPassword(std::string password) { this->_password = password; }
 
 void User::closeSocket()
 {
@@ -57,7 +60,8 @@ size_t User::receiveMsg()
 
     _buffer.clear();
     _buffer = buffer; // Save the read data in the class variable
-
+    if (_buffer.size() == 1)
+        return (0);
     // Process the read data
     splitAndProcess(_buffer);
     return byteRead; // Return the number of bytes read

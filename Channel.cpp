@@ -245,21 +245,21 @@ void        Channel::broadcast(const std::string& message, User* exclude)
     }
 
     // Send a message to the channel operators, excluding the specified User
-    it = operators.begin();
-    while (it != operators.end()) 
-    {
-        if (it->second != exclude) 
-        {
-            it->second->write(message);
-        }
-        it++;
-    }
+    // it = operators.begin();
+    // while (it != operators.end()) 
+    // {
+    //     if (it->second != exclude) 
+    //     {
+    //         it->second->write(message);
+    //     }
+    //     it++;
+    // }
 
     // Send a message to the channel owner, excluding the specified User
-    if (owner != NULL && owner != exclude) 
-    {
-        owner->write(message);
-    }
+    // if (owner != NULL && owner != exclude) 
+    // {
+    //     owner->write(message);
+    // }
 }
 
 void        Channel::kick(User* client, User* target, const std::string& reason) 

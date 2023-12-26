@@ -26,7 +26,7 @@ class User
 		std::string 				_username;
 		std::string					_userIP;
 		std::string					_userHost;
-
+		std::string 				_password;
 	public:
 		User(int fd, std::string userIP, std::string userHost);
 		~User();
@@ -51,7 +51,9 @@ class User
 		std::string					getUserHost() const;
 		std::string					getBuffer() const;
 		bool 						getIsAuth() const;
+		std::string 				getPassword() const;
 
+		void        				setPassword(std::string password);
 		void 						setNickname(std::string nickname);
 		void 						setUsername(std::string username);
 		void						setUserIP(std::string userIP);

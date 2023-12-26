@@ -40,6 +40,9 @@ enum e_commands
 	INVITE,
 	TOPIC,
 	MODE,
+	INFO,
+	PASS,
+	AUTH,
 	QUIT
 };
 
@@ -82,6 +85,8 @@ class Server
 		static void			shutdownServer();
 		void				authenticateUser(int i);
 		Channel*			getChannel(std::string name);
+		int					isCommand(std::string command);
+
 
 };
 

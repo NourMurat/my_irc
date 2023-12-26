@@ -65,30 +65,49 @@ void Server::welcomeMsg(User *user)
 	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
 }
 
-int isCommand(std::string command)
+int toUpper(int c) {
+    return std::toupper(static_cast<unsigned char>(c));
+}
+
+std::string toUpperCase(const std::string& str) {
+    std::string upperCaseStr = str;
+    std::transform(upperCaseStr.begin(), upperCaseStr.end(), upperCaseStr.begin(), toUpper);
+    return upperCaseStr;
+}
+
+
+int Server::isCommand(std::string command)
 {
-	if (command == "NICK" || command == "/NICK")
+	std::string command2 = toUpperCase(command);
+
+	if (command2 == "NICK" || command2 == "/NICK")
 		return (NICK);
-	if (command == "USER" || command == "/USER")
+	if (command2 == "USER" || command2 == "/USER")
 		return (USER);
-	if (command == "JOIN")
+	if (command2 == "JOIN" || command2 == "/JOIN")
 		return (JOIN);
-	if (command == "MSG")
+	if (command2 == "MSG" || command2 == "/MSG")
 		return (MSG);
-	if (command == "PRIVMSG")
+	if (command2 == "PRIVMSG" || command2 == "/PRIVMSG")
 		return (PRIVMSG);
-	if (command == "PING")
+	if (command2 == "PING" || command2 == "/PING")
 		return (PING);
-	if (command == "PART")
+	if (command2 == "PART" || command2 == "/PART")
 		return (PART);
-	if (command == "INVITE")
+	if (command2 == "INVITE" || command2 == "/INVITE")
 		return (INVITE);
-	if (command == "TOPIC")
+	if (command2 == "TOPIC" || command2 == "/TOPIC")
 		return (TOPIC);
-	if (command == "MODE")
+	if (command2 == "MODE" || command2 == "/MODE")
 		return (MODE);
-	if (command == "QUIT" || command == "/QUIT")
+	if (command2 == "QUIT" || command2 == "/QUIT")
 		return (QUIT);
+	if (command2 == "PASS" || command2 == "/PASS")
+		return (PASS);
+	if (command2 == "INFO" || command2 == "/INFO")
+		return (INFO);
+	if (command2 == "AUTH" || command2 == "/AUTH")
+		return (AUTH);
 	return (NOTCOMMAND);
 }
 
@@ -241,6 +260,18 @@ void Server::runServer()
 							{
 								case NICK:
 								{
+									std::string check = (*it)->_incomingMsgs[1];
+									if (check.empty())
+									{
+										(*it)->write("ERROR :No nick given\r\n");
+										break ;
+									}
+									if (checkDupNickname(_users, (*it)->_incomingMsgs[1]))
+									{
+										std::string error = "ERROR :Nickname is already in use\r\n";
+										send((*it)->getFd(), error.c_str(), error.length(), 0);
+										break ;
+									}
 									(*it)->setNickname((*it)->_incomingMsgs[1]);
 									std::string msg = "Your nickname has been changed to " + (*it)->getNickname() + "\r\n";
 									std::cout << "nickname has been set to "<< (*it)->getNickname() << "\n";
@@ -249,6 +280,12 @@ void Server::runServer()
 								}
 								case USER:
 								{
+									std::string check = (*it)->_incomingMsgs[1];
+									if (check.empty())
+									{
+										(*it)->write("ERROR :No username given\r\n");
+										break ;
+									}
 									(*it)->setUsername((*it)->_incomingMsgs[1]);
 									std::string msg = "Your username has been changed to " + (*it)->getNickname() + "\r\n";
 									std::cout << "username has been set to " << (*it)->getUsername() << std::endl;
@@ -282,6 +319,8 @@ void Server::runServer()
 								}
 								case JOIN:
 								{
+									if ((*it)->getIsAuth() == false)
+										break;
 									// Channel *newChannel = new Channel((*it)->_incomingMsgs[1], (*it));
 									// if(messages.size() < 2)
 									// 	return;
@@ -291,7 +330,6 @@ void Server::runServer()
 									// newChannel = irc::Server::serverInstance->getChannel(user->_channelToJoin.at(x));
 									// join_channel(user->_channelToJoin.at(x), user, channel, "");
 									// x++;
-									
 
 
 									if ((*it)->_incomingMsgs.size() < 2)
@@ -340,13 +378,23 @@ void Server::runServer()
 								case MSG:
 								case PRIVMSG:
 								{
+									if ((*it)->getIsAuth() == false)
+										break;
 									if ((*it)->_incomingMsgs[1][0] != '#')
 									{
 										std::cout << MAGENTA << "DEBUGG:: PRIV" << RESET << "\n";
 										std::vector<User *>::iterator itReceiver = std::find_if(_users.begin(), _users.end(), FindByNickname((*it)->_incomingMsgs[1]));
+										if (itReceiver == _users.end())
+											break ;
 										std::string msg = (*it)->_incomingMsgs[2];
+										if (msg.empty())
+										{
+											(*it)->write("ERROR :No nick given\r\n");
+											break ;
+										}
 										if ((*itReceiver)->getFd() != -1)
 										{
+											std::cout << MAGENTA << "DEBUGG:: PRIV" << RESET << "\n";
 											for (unsigned int index = 3; index < (*it)->_incomingMsgs.size(); ++index)
 												msg += " " + (*it)->_incomingMsgs[index];
 											std::string resendMsg = ":" + (*it)->getNickname() + " PRIVMSG " + (*it)->_incomingMsgs[1] + " " + msg + "\r\n";
@@ -373,7 +421,7 @@ void Server::runServer()
 													std::string msg = ":" + (*it)->getNickname() + " PRIVMSG " + (*itChannel)->getName() + " " + chanMSG + "\r\n";
 													send((*it)->getFd(), msg.c_str(), msg.length(), 0);
 													(*itChannel)->broadcast(msg, (*it));
-													break;
+													break ;
 												}
 												else if (!userIsInChannel)
 												{
@@ -384,7 +432,73 @@ void Server::runServer()
 												break ;
 											}
 										}
+										break ;
 									}
+								}
+								case PASS:
+								{	
+									std::string check = (*it)->_incomingMsgs[1];
+									if (check.empty())
+									{
+										(*it)->write("ERROR :No password given\r\n");
+										break ;
+									}
+									if ((*it)->_incomingMsgs[1] != _password)
+									{
+										std::string error = "ERROR :Wrong password\r\n";
+										send((*it)->getFd(), error.c_str(), error.length(), 0);
+										(*it)->setPassword("");
+										break ;
+									}
+									else
+										(*it)->setPassword((*it)->_incomingMsgs[1]);
+									break ;
+								}
+								case INFO:
+								{
+									std::string msg;
+
+									if ((*it)->getNickname().empty())
+										msg = "Your nickname is not set\r\n";
+									else
+										msg = "Your nickname is " + (*it)->getNickname() + "\r\n";
+									send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+									if ((*it)->getUsername().empty())
+										msg = "Your username is not set\r\n";
+									else
+										msg = "Your username is " + (*it)->getUsername() + "\r\n";
+									send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+									if ((*it)->getPassword().empty())
+										msg = "Your password is not set\r\n";
+									else
+										msg = "Your password is " + (*it)->getPassword() + "\r\n";
+									send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+									break ;
+								}
+								case AUTH:
+								{
+									if ((*it)->getIsAuth())
+									{
+										std::string msg = "You are already authorized\r\n";
+										send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+										break ;
+									}
+									else
+									{
+										if ((*it)->getPassword() == _password && !(*it)->getNickname().empty() && \
+											!(*it)->getUsername().empty())
+										{
+											(*it)->write("You have been authorized\r\n");
+											(*it)->setIsAuth(true);
+										}
+										else
+										{
+											std::string msg = "Error: please provide a password, nick, and username to be authorized\r\n";
+											send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+											break ;
+										}
+									}
+									break ;
 								}
 								case PART:
 								{
@@ -511,7 +625,7 @@ void Server::removeUser(std::vector<User *> &users, int fd)
 	{
 		(*itUser)->closeSocket();
 		users.erase(itUser);
-		delete *itUser;
+		// delete *itUser;
 	}
 	// Удаление файлового дескриптора из _fds
 	std::vector<struct pollfd>::iterator itFd = std::find_if(_fds.begin(), _fds.end(), FindByFD(fd));
