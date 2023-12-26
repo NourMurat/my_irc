@@ -12,6 +12,7 @@ class Channel
 {
 	// A client_iterator synonym is created to make the code easier to read	
 	typedef std::map<std::string, User*>::iterator client_iterator;
+	typedef std::map<std::string, User*>::iterator operator_iterator;
 
 private:
 	std::string		name; //name of the channel
@@ -84,8 +85,9 @@ public:
 	void 		addBanned(User* client, User* invoker, const std::string& reason);
 
 	// Remove the corresponding Users from the map we need
-	void 		removeMember(User* client);
-	void 		removeOperator(User* client);
+	void 		removeMemberOrOperatorFromChannel(User* client);
+	// void		removeOperatorFromChannel(User* client);
+	void 		takeOperatorPrivilege(User* client);
 	void 		removeInvited(User* client);
 	void 		removeBanned(User* client);
 	void		removeUserLimit();

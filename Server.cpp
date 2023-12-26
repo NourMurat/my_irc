@@ -428,6 +428,7 @@ void Server::runServer()
 													std::string error = "ERROR :You're not on that channel\r\n";
 													send((*it)->getFd(), error.c_str(), error.length(), 0);
 													break ;
+													
 												}
 												break ;
 											}
@@ -502,6 +503,48 @@ void Server::runServer()
 								}
 								case PART:
 								{
+									if ((*it)->getIsAuth() == false)
+										break;
+									if ((*it)->_incomingMsgs.size() < 2)
+									{
+										std::string error = "ERROR :No channel given\r\n";
+										send((*it)->getFd(), error.c_str(), error.length(), 0);
+										break ;
+									}
+									if ((*it)->_incomingMsgs[1][0] != '#')
+										(*it)->_incomingMsgs[1].insert(0, "#");
+									bool userIsInChannel = false;
+									for (std::vector<Channel *>::iterator itChannel = _channels.begin(); itChannel != _channels.end(); ++itChannel)
+									{
+										if ((*itChannel)->getName() == (*it)->_incomingMsgs[1])
+										{
+
+											if ((*itChannel)->getOwner() == (*it)) {
+											// The channel owner cannot PART the channel, need to use the KICK command
+											(*it)->write("482 " + (*it)->getNickname() + " " + (*it)->_incomingMsgs[1] + 
+														" :You're the channel owner, use KICK to leave the channel.");
+											break ;
+											}
+											
+											if ((*itChannel)->isMember((*it)) || (*itChannel)->isOperator((*it)))
+											{
+												std::cout << MAGENTA << "DEBUGG:: PART CHAN" << RESET << "\n";
+												userIsInChannel = true;
+												std::string msg = ":" + (*it)->getNickname() + " PART " + (*itChannel)->getName() + "\r\n";
+												send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+												(*itChannel)->removeMemberOrOperatorFromChannel((*it));
+												break ;
+											}
+											else if (!userIsInChannel)
+											{
+												std::string error = "ERROR :You're not on that channel\r\n";
+												send((*it)->getFd(), error.c_str(), error.length(), 0);
+												break ;
+												
+											}
+											break ;
+										}
+									}
 									break ;
 								}
 								default:

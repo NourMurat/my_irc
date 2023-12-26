@@ -127,14 +127,28 @@ void        Channel::addBanned(User* client, User* invoker, const std::string& r
 }
 
 // Removing a member from map members
-void        Channel::removeMember(User* client) 
+void        Channel::removeMemberOrOperatorFromChannel(User* client) 
 {
-    client_iterator it = members.find(client->getNickname());
-    if (it != members.end()) 
+    client_iterator itMember = members.find(client->getNickname());
+    operator_iterator itOperator = operators.find(client->getNickname());
+    if (itMember != members.end()) 
     {
-        std::string message = "PART " + name + " :" + client->getNickname();
-        broadcast(message);
-        members.erase(it);
+        std::cout << MAGENTA << "DEBUGG:: REMOVE MEMBER (" << members[client->getNickname()]->getNickname() << ") IN THE NEW CHANNEL (" << getName() << ") !!!" << RESET << "\n";
+        std::string channelMsg = ":" + client->getNickname() + " PART " + name + " :leaving" + "\r\n";
+		broadcast(channelMsg, client);
+        members.erase(itMember);
+        // operators.erase(itOperator);
+
+        // std::string logMessage = client->getNickname() + " has left channel " + name;
+        // log(logMessage);
+    }
+    else if (itOperator != operators.end())
+    {
+        std::cout << MAGENTA << "DEBUGG:: REMOVE MEMBER (" << operators[client->getNickname()]->getNickname() << ") IN THE NEW CHANNEL (" << getName() << ") !!!" << RESET << "\n";
+        std::string channelMsg = ":" + client->getNickname() + " PART " + name + " :leaving" + "\r\n";
+		broadcast(channelMsg, client);
+        takeOperatorPrivilege(itOperator->second);
+        // operators.erase(itOperator);
 
         // std::string logMessage = client->getNickname() + " has left channel " + name;
         // log(logMessage);
@@ -144,7 +158,7 @@ void        Channel::removeMember(User* client)
 }
 
 // Removing an operator from map operators
-void        Channel::removeOperator(User* client) 
+void        Channel::takeOperatorPrivilege(User* client) 
 {
     // Check if the User is the channel owner
     if (owner != client) {
@@ -290,8 +304,8 @@ void        Channel::kick(User* client, User* target, const std::string& reason)
             broadcast(kickMessage);
 
             // Remove the target from appropriate maps using existing functions
-            if (itMember != members.end()) removeMember(target);
-            if (itOperator != operators.end()) removeOperator(target);
+            if (itMember != members.end()) removeMemberOrOperatorFromChannel(target);
+            if (itOperator != operators.end()) takeOperatorPrivilege(target);
             if (itInvited != invited.end()) removeInvited(target);
             if (itBanned != banned.end()) removeBanned(target);
 
