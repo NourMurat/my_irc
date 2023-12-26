@@ -13,7 +13,7 @@
 #include <arpa/inet.h> //htons
 #include <sys/socket.h>
 
-#include "irc.hpp"
+#include "Irc.hpp"
 #include "User.hpp"
 #include "Channel.hpp"
 #include <csignal>

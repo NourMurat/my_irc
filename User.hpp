@@ -10,7 +10,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-#include "irc.hpp"
+#include "Irc.hpp"
 #include "Channel.hpp"
 // #include "Server.hpp"
 

@@ -1,5 +1,5 @@
-#include "irc.hpp"
-#include "Server.hpp" //only for colors
+#include "Irc.hpp"
+// #include "Server.hpp" //only for colors
 
 int parsingCommandLine(int ac, char **av)
 {

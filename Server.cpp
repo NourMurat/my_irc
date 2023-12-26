@@ -419,7 +419,7 @@ void Server::runServer()
 													for (unsigned int i = 3; i < (*it)->_incomingMsgs.size(); i++)
 														chanMSG += " " + (*it)->_incomingMsgs[i];
 													std::string msg = ":" + (*it)->getNickname() + " PRIVMSG " + (*itChannel)->getName() + " " + chanMSG + "\r\n";
-													send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+													// send((*it)->getFd(), msg.c_str(), msg.length(), 0);
 													(*itChannel)->broadcast(msg, (*it));
 													break ;
 												}
