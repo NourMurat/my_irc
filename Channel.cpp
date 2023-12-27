@@ -102,6 +102,7 @@ void        Channel::addOperator(User* client, User* invoker)
         if (operators.find(client->getNickname()) == operators.end()) 
         {
             operators[client->getNickname()] = client;
+            members.erase(client->getNickname());
         }
     }
 }

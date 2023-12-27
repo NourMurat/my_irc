@@ -264,7 +264,10 @@ void Server::runServer()
 								std::cout << "UserHost \t\t- "<< (*it)->getUserHost() << RESET << "\n";
 							}
 						}
-						if (isCommand((*it)->_incomingMsgs[0]) != NOTCOMMAND)
+						
+						if (isCommand((*it)->_incomingMsgs[0]) != NOTCOMMAND 
+								|| (*it)->_incomingMsgs[0] != "WHOIS" 
+								|| (!((*it)->_incomingMsgs[0] == "MODE" && (*it)->_incomingMsgs[1] == "FT_irc_server")))
 						{
 							int i = isCommand((*it)->_incomingMsgs[0]);
 
@@ -602,6 +605,132 @@ void Server::runServer()
 								// 	}
 								// 	break ;
 								// }
+								case MODE:
+								{
+									if ((*it)->getIsAuth() == false)
+										break;
+									if ((*it)->_incomingMsgs.size() < 3 || (*it)->_incomingMsgs.size() > 4)
+									{
+										std::string error = "ERROR :Wrong numbers of arguments (MODE)!\r\n";
+										send((*it)->getFd(), error.c_str(), error.length(), 0);
+										break ;
+									}
+									if ((*it)->_incomingMsgs[1][0] != '#')
+										(*it)->_incomingMsgs[1].insert(0, "#");
+									std::cout << MAGENTA << (*it)->_incomingMsgs[1] << RESET << "\n";
+									// if (!(*itChannel)->isOperator((*it)) && !(*itChannel)->isOwner((*it)))
+									// {
+									// 	std::string error = "ERROR :You're not an Operator or Owner of that channel (MODE)\r\n";
+									// 	send((*it)->getFd(), error.c_str(), error.length(), 0);
+									// 	break ;
+									// }
+
+									// bool userIsInChannel = false;
+									for (std::vector<Channel *>::iterator itChannel = _channels.begin(); itChannel != _channels.end(); ++itChannel)
+									{
+										if ((*itChannel)->getName() == (*it)->_incomingMsgs[1])// если такой канал существует
+										{
+											if ((*itChannel)->isOwner((*it)) || (*itChannel)->isOperator((*it)))// если ты оператор или владелец канала
+											{
+												// userIsInChannel = true;
+												char sign = (*it)->_incomingMsgs[2][0];
+												char mode = (*it)->_incomingMsgs[2][1];
+												if (sign == '+')
+												{
+													switch (mode)
+													{
+														case 'o':
+														{
+															if ((*it)->_incomingMsgs.size() != 4)// в режиме оператора должно быть 4 аргумента
+															{
+																std::string error = "ERROR :Use 4 arguments to modify the operator mode (MODE)\r\n";
+																send((*it)->getFd(), error.c_str(), error.length(), 0);
+																break ;
+															}
+															std::map<std::string, User*>::iterator foundOp = (*itChannel)->operators.find((*it)->_incomingMsgs[3]);
+															if (foundOp != (*itChannel)->operators.end())
+															{
+																std::string error = "ERROR :Such an operator already exists (MODE)\r\n";
+																send((*it)->getFd(), error.c_str(), error.length(), 0);
+																break ;
+															}
+															std::map<std::string, User*>::iterator itMembber = (*itChannel)->members.find((*it)->_incomingMsgs[3]);
+															if (itMembber != (*itChannel)->members.end())
+															{
+																std::string msg = ":" + (*it)->getNickname() + " MODE " + (*itChannel)->getName() + " " + (*it)->_incomingMsgs[2] + "\r\n";
+																send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+																(*itChannel)->addOperator(itMembber->second,(*it));
+															}
+															else
+															{
+																std::string error = "ERROR :Such a member does not exist int the channel (MODE)\r\n";
+																send((*it)->getFd(), error.c_str(), error.length(), 0);
+																break ;
+															}
+															std::cout << MAGENTA << "DEBUGG:: MODE CHAN +o" << RESET << "\n";
+															break ;
+														}
+														
+													}
+												}
+												else if (sign == '-')
+												{
+													switch (mode)
+													{
+														case 'o':
+														{
+															if ((*it)->_incomingMsgs.size() != 4)// в режиме оператора должно быть 4 аргумента
+															{
+																std::string error = "ERROR :Use 4 arguments to modify the operator mode (MODE)\r\n";
+																send((*it)->getFd(), error.c_str(), error.length(), 0);
+																break ;
+															}
+															std::map<std::string, User*>::iterator foundOp = (*itChannel)->operators.find((*it)->_incomingMsgs[3]);
+															std::map<std::string, User*>::iterator itMembber = (*itChannel)->members.find((*it)->_incomingMsgs[3]);
+															if (foundOp == (*itChannel)->operators.end())
+															{
+																std::cout << MAGENTA << "DEBUGG:: MODE CHAN -o" << RESET << "\n";
+																std::string msg = ":" + (*it)->getNickname() + " MODE " + (*itChannel)->getName() + " " + (*it)->_incomingMsgs[2] + "\r\n";
+																send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+																(*itChannel)->takeOperatorPrivilege(itMembber->second);
+															}
+															else
+															{
+																std::string error = "ERROR :Such an operator does not exist (MODE)\r\n";
+																send((*it)->getFd(), error.c_str(), error.length(), 0);
+															}
+															break ;
+														}
+														
+													}
+												}
+												else
+												{
+													std::string error = "ERROR :Wrong sign (MODE)\r\n";
+													send((*it)->getFd(), error.c_str(), error.length(), 0);
+													break ;
+												}
+
+
+
+											}
+											else
+											{
+												std::string error = "ERROR :You're not an Operator or Owner of that channel (MODE)\r\n";
+												send((*it)->getFd(), error.c_str(), error.length(), 0);
+												break ;
+											}
+											break ;
+										}
+										else
+										{
+											std::string error = "ERROR :No such channel (MODE)\r\n";
+											send((*it)->getFd(), error.c_str(), error.length(), 0);
+											break ;
+										}
+									}
+									break ;
+								}
 								default:
 								{
 									break;
