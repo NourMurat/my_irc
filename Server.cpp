@@ -343,7 +343,6 @@ void Server::runServer()
 									// join_channel(user->_channelToJoin.at(x), user, channel, "");
 									// x++;
 
-
 									if ((*it)->_incomingMsgs.size() < 2)
 										break ;
 									if ((*it)->_incomingMsgs[1][0] != '#')
@@ -422,8 +421,8 @@ void Server::runServer()
 										{
 											if ((*itChannel)->getName() == chanName)
 											{
-												std::map<std::string, User*>::iterator itLiveUser = std::find_if((*itChannel)->members.begin(), (*itChannel)->members.end(), FindByNickname((*it)->getNickname()));
-												if (itLiveUser != (*itChannel)->members.end())
+												// std::map<std::string, User*>::iterator itLiveUser = std::find_if((*itChannel)->members.begin(), (*itChannel)->members.end(), FindByNickname((*it)->getNickname()));
+												if ((*itChannel)->isMember((*it)) || (*itChannel)->isOperator((*it)) || (*itChannel)->isOwner((*it)))
 												{
 													std::cout << MAGENTA << "DEBUGG:: PRIV CHAN" << RESET << "\n";
 													userIsInChannel = true;
@@ -437,10 +436,9 @@ void Server::runServer()
 												}
 												else if (!userIsInChannel)
 												{
-													std::string error = "ERROR :You're not on that channel\r\n";
+													std::string error = "ERROR :You're not on that channel (PRIVMSG)\r\n";
 													send((*it)->getFd(), error.c_str(), error.length(), 0);
 													break ;
-													
 												}
 												break ;
 											}
@@ -551,10 +549,9 @@ void Server::runServer()
 											// }
 											if (!userIsInChannel)
 											{
-												std::string error = "ERROR :You're not on that channel\r\n";
+												std::string error = "ERROR :You're not on that channel (PART)\r\n";
 												send((*it)->getFd(), error.c_str(), error.length(), 0);
 												break ;
-												
 											}
 											break ;
 										}

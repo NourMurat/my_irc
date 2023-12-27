@@ -135,29 +135,27 @@ int        Channel::removeUserFromChannel(User* client)
     operator_iterator itOperator = operators.find(client->getNickname());
     if (itMember != members.end()) 
     {
-        std::cout << MAGENTA << "DEBUGG:: REMOVE MEMBER (" << members[client->getNickname()]->getNickname() << ") IN THE CHANNEL (" << getName() << ") !!!" << RESET << "\n";
+        std::cout << MAGENTA << "DEBUGG:: REMOVE MEMBER (" << members[client->getNickname()]->getNickname() << ") FROM THE CHANNEL (" << getName() << ") !!!" << RESET << "\n";
         std::string channelMsg = ":" + client->getNickname() + " PART " + name + " :leaving" + "\r\n";
 		broadcast(channelMsg, client);
         members.erase(itMember);
-        // operators.erase(itOperator);
 
         // std::string logMessage = client->getNickname() + " has left channel " + name;
         // log(logMessage);
     }
     else if (itOperator != operators.end())
     {
-        std::cout << MAGENTA << "DEBUGG:: REMOVE OPERATOR (" << operators[client->getNickname()]->getNickname() << ") IN THE CHANNEL (" << getName() << ") !!!" << RESET << "\n";
+        std::cout << MAGENTA << "DEBUGG:: REMOVE OPERATOR (" << operators[client->getNickname()]->getNickname() << ") FROM THE CHANNEL (" << getName() << ") !!!" << RESET << "\n";
         std::string channelMsg = ":" + client->getNickname() + " PART " + name + " :leaving" + "\r\n";
 		broadcast(channelMsg, client);
         takeOperatorPrivilege(itOperator->second);
-        // operators.erase(itOperator);
 
         // std::string logMessage = client->getNickname() + " has left channel " + name;
         // log(logMessage);
     }
     else if (owner == client)
     {
-        std::cout << MAGENTA << "DEBUGG:: REMOVE OWNER (" << owner->getNickname() << ") IN THE CHANNEL (" << name << ") !!!" << RESET << "\n";
+        std::cout << MAGENTA << "DEBUGG:: REMOVE OWNER (" << owner->getNickname() << ") FROM THE CHANNEL (" << name << ") !!!" << RESET << "\n";
         std::string channelMsg = ":" + client->getNickname() + " PART " + name + " :leaving" + "\r\n";
         broadcast(channelMsg, client);
 
@@ -299,21 +297,21 @@ void        Channel::broadcast(const std::string& message, User* exclude)
     }
 
     // Send a message to the channel operators, excluding the specified User
-    // it = operators.begin();
-    // while (it != operators.end()) 
-    // {
-    //     if (it->second != exclude) 
-    //     {
-    //         it->second->write(message);
-    //     }
-    //     it++;
-    // }
+    it = operators.begin();
+    while (it != operators.end()) 
+    {
+        if (it->second != exclude) 
+        {
+            it->second->write(message);
+        }
+        it++;
+    }
 
     // Send a message to the channel owner, excluding the specified User
-    // if (owner != NULL && owner != exclude) 
-    // {
-    //     owner->write(message);
-    // }
+    if (owner != NULL && owner != exclude) 
+    {
+        owner->write(message);
+    }
 }
 
 void        Channel::kick(User* client, User* target, const std::string& reason) 
