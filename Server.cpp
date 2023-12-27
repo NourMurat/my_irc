@@ -530,17 +530,6 @@ void Server::runServer()
 									{
 										if ((*itChannel)->getName() == (*it)->_incomingMsgs[1])
 										{
-
-											// if ((*itChannel)->isOwner((*it))) {
-											// // The channel owner cannot PART the channel, need to use the KICK command
-											// (*it)->write("482 " + (*it)->getNickname() + " " + (*it)->_incomingMsgs[1] + 
-											// 			" :You're the channel owner, use KICK to leave the channel.");
-											
-											// break ;
-											// }
-											
-											// if ((*itChannel)->isMember((*it)) || (*itChannel)->isOperator((*it)))
-											// {
 												std::cout << MAGENTA << "DEBUGG:: PART CHAN" << RESET << "\n";
 												userIsInChannel = true;
 												std::string msg = ":" + (*it)->getNickname() + " PART " + (*itChannel)->getName() + "\r\n";
@@ -548,7 +537,6 @@ void Server::runServer()
 												if ((*itChannel)->removeUserFromChannel((*it)) == 1)
 													removeChannelFromServer((*itChannel)->getName());
 												break ;
-											// }
 											if (!userIsInChannel)
 											{
 												std::string error = "ERROR :You're not on that channel\r\n";
