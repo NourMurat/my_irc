@@ -39,6 +39,7 @@ enum e_commands
 	PART,
 	INVITE,
 	TOPIC,
+	KICK,
 	MODE,
 	INFO,
 	PASS,
