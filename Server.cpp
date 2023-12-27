@@ -715,6 +715,7 @@ void Server::runServer()
 									}
 									break ;
 								}
+							}
 								// case KICK:
 								// {
 								// 	if ((*it)->getIsAuth() == false)
@@ -864,9 +865,6 @@ void Server::runServer()
 													send((*it)->getFd(), error.c_str(), error.length(), 0);
 													break ;
 												}
-
-
-
 											}
 											else
 											{
@@ -889,12 +887,6 @@ void Server::runServer()
 								{
 									break;
 								}
-								break;
-							}
-							default:
-							{
-								break;
-							}
 							}
 						}
 					}
