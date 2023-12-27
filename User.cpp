@@ -138,7 +138,7 @@ void	User::joinChannel(const std::string& channelName, Channel* channel)
 {
 	channelsOfClient[channelName] = channel;
 }
-		
+
 //Method for removing a User from a channel
 void	User::removeChannelOfClient(const std::string& channelName)
 {
