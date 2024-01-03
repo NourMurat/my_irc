@@ -153,7 +153,7 @@ const std::map<std::string, Channel*>&      User::getChannelsOfClient() const
 // sends a message over an open socket
 void	User::write(const std::string& message) const
 {
-    std::string buffer = message + "\r\n";
-    if (send(_fd, buffer.c_str(), buffer.length(), 0) < 0)
+    // std::string buffer = message + "\r\n";
+    if (send(_fd, message.c_str(), message.length(), 0) < 0)
         throw std::runtime_error("Error while sending a message to a client!");
 }
