@@ -448,7 +448,6 @@ void Server::runServer()
 												for (unsigned int i = 3; i < (*it)->_incomingMsgs.size(); i++)
 													chanMSG += " " + (*it)->_incomingMsgs[i];
 												std::string msg = ":" + (*it)->getNickname() + " PRIVMSG " + (*itChannel)->getName() + " " + chanMSG + "\r\n";
-												// send((*it)->getFd(), msg.c_str(), msg.length(), 0);
 												(*itChannel)->broadcast(msg, (*it));
 												break ;
 											}
@@ -1043,15 +1042,63 @@ void Server::runServer()
 															// std::cout << MAGENTA << (*it)->_incomingMsgs[1] << RESET << "\n";
 															if ((*it)->_incomingMsgs.size() != 4) // в режиме оператора должно быть 4 аргумента
 															{
-																std::string error = "ERROR :Use 4 arguments to modify the operator mode (MODE)\r\n";
-																send((*it)->getFd(), error.c_str(), error.length(), 0);
+																// std::cout << MAGENTA << (*it)->_incomingMsgs[1] << RESET << "\n";
+																if ((*it)->_incomingMsgs.size() != 4)// в режиме оператора должно быть 4 аргумента
+																{
+																	std::string error = "ERROR :Use 4 arguments to modify the operator mode (MODE)\r\n";
+																	send((*it)->getFd(), error.c_str(), error.length(), 0);
+																	break ;
+																}
+																std::map<std::string, User*>::iterator foundOp = (*itChannel)->operators.find((*it)->_incomingMsgs[3]);
+																if (foundOp != (*itChannel)->operators.end())
+																{
+																	std::string error = "ERROR :Such an operator already exists (MODE)\r\n";
+																	send((*it)->getFd(), error.c_str(), error.length(), 0);
+																	break ;
+																}
+																std::map<std::string, User*>::iterator itMembber = (*itChannel)->members.find((*it)->_incomingMsgs[3]);
+																if (itMembber != (*itChannel)->members.end())
+																{
+																	std::string msg = ":" + (*it)->getNickname() + " MODE " + (*itChannel)->getName() + " " + (*it)->_incomingMsgs[2] + "\r\n";
+																	send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+																	// (*itChannel)->broadcast(msg);
+																	(*itChannel)->addOperator(itMembber->second,(*it));
+																	std::cout << MAGENTA << "LOG:: (" << (*it)->getNickname()  << ") GAVE (" << itMembber->first << ") the channel operator privilege"  << RESET << "\n";
+																}
+																else
+																{
+																	std::string error = "ERROR :Such a member does not exist in the channel (MODE)\r\n";
+																	send((*it)->getFd(), error.c_str(), error.length(), 0);
+																	break ;
+																}
+																std::cout << MAGENTA << "DEBUGG:: MODE CHAN +o" << RESET << "\n";
 																break ;
 															}
 															std::map<std::string, User *>::iterator foundOp = (*itChannel)->operators.find((*it)->_incomingMsgs[3]);
 															if (foundOp != (*itChannel)->operators.end())
 															{
-																std::string error = "ERROR :Such an operator already exists (MODE)\r\n";
-																send((*it)->getFd(), error.c_str(), error.length(), 0);
+																if ((*it)->_incomingMsgs.size() != 4)// в режиме оператора должно быть 4 аргумента
+																{
+																	std::string error = "ERROR :Use 4 arguments to modify the operator mode (MODE)\r\n";
+																	send((*it)->getFd(), error.c_str(), error.length(), 0);
+																	break ;
+																}
+																std::map<std::string, User*>::iterator foundOp = (*itChannel)->operators.find((*it)->_incomingMsgs[3]);
+																if (foundOp == (*itChannel)->operators.end())
+																{
+																	std::string error = "ERROR :Such an operator does not exist (MODE)\r\n";
+																	send((*it)->getFd(), error.c_str(), error.length(), 0);
+																	break ;
+																}
+																else
+																{
+																	std::string msg = ":" + (*it)->getNickname() + " MODE " + (*itChannel)->getName() + " " + (*it)->_incomingMsgs[2] + "\r\n";
+																	send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+																	// (*itChannel)->broadcast(msg);
+																	(*itChannel)->takeOperatorPrivilege(foundOp->second);
+																	std::cout << MAGENTA << "LOG:: (" << (*it)->getNickname()  << ") TOOK channel operator privilege away from (" << foundOp->first << RESET << ")\n";
+																}
+																std::cout << MAGENTA << "DEBUGG:: MODE CHAN -o" << RESET << "\n";
 																break ;
 															}
 															std::map<std::string, User *>::iterator itMembber = (*itChannel)->members.find((*it)->_incomingMsgs[3]);
@@ -1332,7 +1379,7 @@ void Server::removeUser(std::vector<User *> &users, int fd)
 	{
 		(*itUser)->closeSocket();
 		users.erase(itUser);
-		// delete *itUser;
+		delete *itUser;
 	}
 	// Удаление файлового дескриптора из _fds
 	std::vector<struct pollfd>::iterator itFd = std::find_if(_fds.begin(), _fds.end(), FindByFD(fd));
