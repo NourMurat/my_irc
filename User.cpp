@@ -53,11 +53,9 @@ size_t User::receiveMsg()
 
     if (byteRead <= 0)
     {
-        return byteRead; // If no data or an error, return the number of bytes read
+        return byteRead;
     }
-
     buffer[byteRead] = '\0'; // Add a null terminator at the end of the string
-
     _buffer.clear();
     _buffer = buffer; // Save the read data in the class variable
     if (_buffer.size() == 1)
@@ -104,7 +102,8 @@ void User::splitAndProcess(const std::string &data)
 
 //---------------------------------------------------------------------------------------------
 
-std::vector<std::string> & User::getOutgoingMsg() {
+std::vector<std::string> & User::getOutgoingMsg()
+{
     return _outgoingMsgs;
 }
 
