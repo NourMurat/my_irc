@@ -111,6 +111,7 @@ void        Channel::addOperator(User* client, User* invoker)
         if (members.find(client->getNickname()) != members.end())
         {
             operators[client->getNickname()] = client;
+            std::string nick = client->getNickname();
             members.erase(client->getNickname());
 
             if (members.find(client->getNickname()) == members.end())
@@ -222,8 +223,9 @@ int        Channel::removeUserFromChannel(User* client)
             std::advance(itOperator, randomIndex); // Перемещаем итератор на случайную позицию
             
             owner = itOperator->second; // Назначаем нового хозяина
+            std::string nickOperator = itOperator->first;
             operators.erase(itOperator);
-            if (operators.find(itOperator->first) == operators.end())
+            if (operators.find(nickOperator) == operators.end())
             {
                 std::cout << MAGENTA << "LOG:: (" << owner->getNickname() << ") IS A NEW OWNER OF THE CHANNEL (" << name << ") !!!" << RESET << "\n";
                 std::string channelMsg = "NOTICE " + name + " :" + client->getNickname() + " no more owner of the channel " + name + ". New owner is " + owner->getNickname() + "\r\n";
@@ -238,8 +240,9 @@ int        Channel::removeUserFromChannel(User* client)
             std::advance(itMember, randomIndex); // Перемещаем итератор на случайную позицию
             
             owner = itMember->second; // Назначаем нового хозяина
+            std::string nickMember = itMember->first;
             members.erase(itMember);
-            if (members.find(itMember->first) == members.end())
+            if (members.find(nickMember) == members.end())
             {
                 std::cout << MAGENTA << "LOG:: (" << owner->getNickname() << ") IS A NEW OWNER OF THE CHANNEL (" << name << ") !!!" << RESET << "\n";
                 std::string channelMsg = "NOTICE " + name + " :" + client->getNickname() + " no more owner of the channel " + name + ". New owner is " + owner->getNickname() + "\r\n";
@@ -276,10 +279,9 @@ void        Channel::takeOperatorPrivilege(User* target)
         members[target->getNickname()] = target;
         
         operators.erase(it);
-
         std::string message = "NOTICE " + name + " :(" + target->getNickname() + ") no more Operator in this chanel!\r\n";
         broadcast(message);
-        
+
         // std::string logMessage = target->getNickname() + " is no longer an operator in channel " + name;
         // log(logMessage);
     }

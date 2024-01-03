@@ -815,8 +815,9 @@ void Server::runServer()
 																	std::string msg = ":" + (*it)->getNickname() + " MODE " + (*itChannel)->getName() + " " + (*it)->_incomingMsgs[2] + "\r\n";
 																	send((*it)->getFd(), msg.c_str(), msg.length(), 0);
 																	// (*itChannel)->broadcast(msg);
-																	(*itChannel)->addOperator(itMembber->second,(*it));
 																	std::cout << MAGENTA << "LOG:: (" << (*it)->getNickname()  << ") GAVE (" << itMembber->first << ") the channel operator privilege"  << RESET << "\n";
+																	(*itChannel)->addOperator(itMembber->second,(*it));
+																	break ;
 																}
 																else
 																{
@@ -847,8 +848,9 @@ void Server::runServer()
 																	std::string msg = ":" + (*it)->getNickname() + " MODE " + (*itChannel)->getName() + " " + (*it)->_incomingMsgs[2] + "\r\n";
 																	send((*it)->getFd(), msg.c_str(), msg.length(), 0);
 																	// (*itChannel)->broadcast(msg);
-																	(*itChannel)->takeOperatorPrivilege(foundOp->second);
 																	std::cout << MAGENTA << "LOG:: (" << (*it)->getNickname()  << ") TOOK channel operator privilege away from (" << foundOp->first << RESET << ")\n";
+																	(*itChannel)->takeOperatorPrivilege(foundOp->second);
+																	break ;
 																}
 																std::cout << MAGENTA << "DEBUGG:: MODE CHAN -o" << RESET << "\n";
 																break ;
