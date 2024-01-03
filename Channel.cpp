@@ -21,6 +21,7 @@ std::string     Channel::getTopic() const { return topic; }
 User*           Channel::getOwner() const { return owner; }
 size_t          Channel::getLimit() const { return limit; }
 size_t          Channel::getSize()const { return members.size(); }
+bool            Channel::getTopicRestrictions() const { return topicRestrictions; }
 
 const std::map<std::string, User* >&    Channel::getMembers() const { return members; }
 const std::map<std::string, User* >&    Channel::getInvited() const { return invited; }
@@ -35,7 +36,7 @@ void        Channel::setPass(std::string passValue) { pass = passValue; }
 void        Channel::setTopic(std::string topicValue) { pass = topicValue; }
 void        Channel::setLimit(size_t limitValue) { limit = limitValue; }
 void        Channel::setInviteOnly(bool value) { inviteOnly = value; }
-
+void        Channel::setTopicRestrictions(bool value) { topicRestrictions = value; }
 /* Channel Methods */
 
 // Whether the channel is an invitation-only channel

@@ -22,6 +22,7 @@ private:
 	User*			owner; //A pointer to the User who is the owner of the channel
 	size_t 			limit; //The limit on the number of members allowed in the channel
 	bool 			inviteOnly; // A Boolean flag indicating whether the channel is by invitation or not
+	bool			topicRestrictions; // A Boolean flag indicating whether the topic can be changed by anyone or not
 	// bool l;
 	// bool o;
 	// bool k;
@@ -48,7 +49,7 @@ public:
 	User*			getOwner() const;
     size_t			getLimit() const;
     size_t			getSize() const;
-
+	bool            getTopicRestrictions() const;
 	// Get a maps of all channel members, as well as a list of invited Users, 
 	// all operators and banned cUsers
     const std::map<std::string, User *>&	getMembers() const;
@@ -64,7 +65,7 @@ public:
 	void		setTopic(std::string topicValue);
 	void		setLimit(size_t limitValue);
 	void		setInviteOnly(bool value);
-
+	void		setTopicRestrictions(bool value);
 
 /* Channel Methods */
 
