@@ -383,6 +383,15 @@ void Server::runServer()
 											send((*it)->getFd(), msg.c_str(), msg.length(), 0);
 											break ;
 										}
+										if (!(*itChannel)->getPass().empty())
+										{
+											if ((*itChannel)->getPass() != (*it)->_incomingMsgs[2])
+											{
+												std::string msg = "ERROR :Wrong password\r\n";
+												send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+												break;
+											}
+										}
 										(*itChannel)->addMember((*it));
 										std::string msg = ":" + (*it)->getNickname() + " JOIN " + (*itChannel)->getName() + "\r\n";
 										msg = ":IRC 332 " + (*it)->getNickname() + " " + (*itChannel)->getName() + " " + (*itChannel)->getTopic() + "\r\n";
