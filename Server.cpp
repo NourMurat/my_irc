@@ -352,14 +352,21 @@ void Server::runServer()
 								{
 									if ((*itChannel)->getName() == (*it)->_incomingMsgs[1])
 									{
+										channelExists = true;
 										std::cout << MAGENTA << "DEBUG:: existing channel\n"
 												  << RESET << std::endl;
-										// if ((*itChannel)->getLimit() != 0 && (*itChannel)->getSize() >= (*itChannel)->getLimit())
-										// {
-										// 	std::string msg = "ERROR :Channel is full\r\n";
-										// 	send((*it)->getFd(), msg.c_str(), msg.length(), 0);
-										// 	break ;
-										// }
+										if ((*itChannel)->getLimit() != 0 && (*itChannel)->countUsers((*itChannel)) >= (*itChannel)->getLimit())
+										{
+											std::string msg = "ERROR :Channel is full\r\n";
+											send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+											break ;
+										}
+										if ((*itChannel)->isMember((*it)) || (*itChannel)->isOperator((*it)) || (*itChannel)->isOwner((*it)))
+										{
+											std::string msg = "ERROR :You're already on that channel\r\n";
+											send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+											break ;
+										}
 										(*itChannel)->addMember((*it));
 										std::string msg = std::string(":IRC 332 ") + (*it)->getNickname() + " " + (*itChannel)->getName() + " " + (*itChannel)->getTopic() + "\r\n";
 										send((*it)->getFd(), msg.c_str(), msg.length(), 0);
@@ -377,7 +384,6 @@ void Server::runServer()
 											std::cout << MAGENTA << "DEBUG:: JOIN NEW MEMBER!\n"
 													  << RESET << std::endl;
 										}
-										channelExists = true;
 										break ;
 									}
 								}
@@ -719,7 +725,6 @@ void Server::runServer()
 											userIsInChannel = true;
 											for (std::vector<User *>::iterator itUser = _users.begin(); itUser != _users.end(); ++itUser)
 											{
-												std::cout << MAGENTA << (*itUser)->getNickname() << RESET << "\n";
 												if ((itUser == _users.end()))
 												{
 													(*it)->write("ERROR :User is not connected\r\n");
@@ -732,6 +737,7 @@ void Server::runServer()
 												}
 												if ((*itUser)->getNickname() == (*it)->_incomingMsgs[1])
 												{
+												std::cout << MAGENTA << (*itUser)->getNickname() << RESET << " DEBBUG INVITE\n";
 													std::cout << MAGENTA << "DEBUGG:: 123 INVITE CHAN" << RESET << "\n";
 													std::string msg = ":" + (*it)->getNickname() + " INVITE " + (*itChannel)->getName() + " " + (*it)->_incomingMsgs[2] + "\r\n";
 													send((*itUser)->getFd(), msg.c_str(), msg.length(), 0);

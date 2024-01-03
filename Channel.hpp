@@ -56,6 +56,7 @@ public:
 	const std::map<std::string, User *>&	getInvited() const;
     const std::map<std::string, User *>&	getOperators() const;
 	const std::map<std::string, User *>&	getBanned() const;
+	size_t      							countUsers(Channel* channel) const;
 
 
 /* Setters */

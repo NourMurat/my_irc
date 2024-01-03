@@ -260,6 +260,11 @@ int        Channel::removeUserFromChannel(User* client)
     return 0;
 }
 
+size_t      Channel::countUsers(Channel* channel) const
+{
+    return (channel->members.size() + channel->operators.size() + 1);
+}
+
 // Removing an operator from map operators
 void        Channel::takeOperatorPrivilege(User* target) 
 {
