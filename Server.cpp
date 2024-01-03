@@ -442,7 +442,6 @@ void Server::runServer()
 												for (unsigned int i = 3; i < (*it)->_incomingMsgs.size(); i++)
 													chanMSG += " " + (*it)->_incomingMsgs[i];
 												std::string msg = ":" + (*it)->getNickname() + " PRIVMSG " + (*itChannel)->getName() + " " + chanMSG + "\r\n";
-												// send((*it)->getFd(), msg.c_str(), msg.length(), 0);
 												(*itChannel)->broadcast(msg, (*it));
 												break;
 											}
@@ -817,7 +816,7 @@ void Server::runServer()
 																	send((*it)->getFd(), msg.c_str(), msg.length(), 0);
 																	// (*itChannel)->broadcast(msg);
 																	(*itChannel)->addOperator(itMembber->second,(*it));
-																	std::cout << MAGENTA << "DEBUGG:: (" << (*it)->getNickname()  << ") GAVE (" << itMembber->first << ") the channel operator privilege"  << RESET << "\n";
+																	std::cout << MAGENTA << "LOG:: (" << (*it)->getNickname()  << ") GAVE (" << itMembber->first << ") the channel operator privilege"  << RESET << "\n";
 																}
 																else
 																{
@@ -849,7 +848,7 @@ void Server::runServer()
 																	send((*it)->getFd(), msg.c_str(), msg.length(), 0);
 																	// (*itChannel)->broadcast(msg);
 																	(*itChannel)->takeOperatorPrivilege(foundOp->second);
-																	std::cout << MAGENTA << "DEBUGG:: (" << (*it)->getNickname()  << ") TOOK channel operator privilege away from (" << foundOp->first << RESET << ")\n";
+																	std::cout << MAGENTA << "LOG:: (" << (*it)->getNickname()  << ") TOOK channel operator privilege away from (" << foundOp->first << RESET << ")\n";
 																}
 																std::cout << MAGENTA << "DEBUGG:: MODE CHAN -o" << RESET << "\n";
 																break ;
@@ -1002,7 +1001,7 @@ void Server::removeUser(std::vector<User *> &users, int fd)
 	{
 		(*itUser)->closeSocket();
 		users.erase(itUser);
-		// delete *itUser;
+		delete *itUser;
 	}
 	// Удаление файлового дескриптора из _fds
 	std::vector<struct pollfd>::iterator itFd = std::find_if(_fds.begin(), _fds.end(), FindByFD(fd));
