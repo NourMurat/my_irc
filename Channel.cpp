@@ -113,18 +113,18 @@ void        Channel::addOperator(User* client, User* invoker)
         {
             operators[client->getNickname()] = client;
             std::string nick = client->getNickname();
-            members.erase(client->getNickname());
+            members.erase(nick);
 
-            if (members.find(client->getNickname()) == members.end())
+            if (members.find(nick) == members.end())
             {
                 // Успешно удален из списка членов и добавлен в операторы
-                std::string broadcastMessage = "NOTICE " + name + " :(" + client->getNickname() + ") has become Operator in this channel!\r\n";
+                std::string broadcastMessage = "NOTICE " + name + " :(" + nick + ") has become Operator in this channel!\r\n";
                 broadcast(broadcastMessage);
             }
             else
             {
                 // Ошибка: пользователь не был удален из списка членов
-                std::string errorMessage = "ERROR :Failed to add (" + client->getNickname() + ") as an Operator.\r\n";
+                std::string errorMessage = "ERROR :Failed to add (" + nick + ") as an Operator.\r\n";
                 broadcast(errorMessage);
             }
         }
