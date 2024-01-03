@@ -367,6 +367,12 @@ void Server::runServer()
 											send((*it)->getFd(), msg.c_str(), msg.length(), 0);
 											break ;
 										}
+										if (!(*itChannel)->getPass().empty() && (*itChannel)->getPass() != (*it)->_incomingMsgs[2])
+										{
+											std::string msg = "ERROR :Wrong password\r\n";
+											send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+											break ;
+										}
 										(*itChannel)->addMember((*it));
 										std::string msg = std::string(":IRC 332 ") + (*it)->getNickname() + " " + (*itChannel)->getName() + " " + (*itChannel)->getTopic() + "\r\n";
 										send((*it)->getFd(), msg.c_str(), msg.length(), 0);
@@ -574,9 +580,6 @@ void Server::runServer()
 									{
 										std::cout << MAGENTA << "DEBUGG:: PART CHAN" << RESET << "\n";
 										userIsInChannel = true;
-										// std::string msg = ":" + (*it)->getNickname() + " PART " + (*itChannel)->getName() + "\r\n";
-										// send((*it)->getFd(), msg.c_str(), msg.length(), 0);
-										// (*itChannel)->broadcast(msg, (*it));
 										if ((*itChannel)->removeUserFromChannel((*it)) == 1)
 											removeChannelFromServer((*itChannel)->getName());
 										break ;
@@ -725,6 +728,7 @@ void Server::runServer()
 											userIsInChannel = true;
 											for (std::vector<User *>::iterator itUser = _users.begin(); itUser != _users.end(); ++itUser)
 											{
+												std::cout << MAGENTA << (*itUser)->getNickname() << RESET << " DEBBUG INVITE\n";
 												if ((itUser == _users.end()))
 												{
 													(*it)->write("ERROR :User is not connected\r\n");
@@ -737,7 +741,6 @@ void Server::runServer()
 												}
 												if ((*itUser)->getNickname() == (*it)->_incomingMsgs[1])
 												{
-												std::cout << MAGENTA << (*itUser)->getNickname() << RESET << " DEBBUG INVITE\n";
 													std::cout << MAGENTA << "DEBUGG:: 123 INVITE CHAN" << RESET << "\n";
 													std::string msg = ":" + (*it)->getNickname() + " INVITE " + (*itChannel)->getName() + " " + (*it)->_incomingMsgs[2] + "\r\n";
 													send((*itUser)->getFd(), msg.c_str(), msg.length(), 0);
@@ -1233,6 +1236,40 @@ void Server::runServer()
 														break ;
 													}
 												}
+												case 'k':
+												{
+													if (sign == '+')
+													{
+														(*itChannel)->setPass((*it)->_incomingMsgs[3]);
+														std::string msg = ":" + (*it)->getNickname() + " MODE " + (*itChannel)->getName() + " " + (*it)->_incomingMsgs[2] + "\r\n";
+														send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+														// (*itChannel)->broadcast(msg);
+														break ;
+													}
+													else if (sign == '-')
+													{
+														if ((*itChannel)->getPass().empty())
+														{
+															std::string error = "ERROR :Channel password is not set (MODE)\r\n";
+															send((*it)->getFd(), error.c_str(), error.length(), 0);
+															break ;
+														}
+														else
+														{
+															(*itChannel)->setPass("");
+															std::string msg = ":" + (*it)->getNickname() + " MODE " + (*itChannel)->getName() + " " + (*it)->_incomingMsgs[2] + "\r\n";
+															send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+															// (*itChannel)->broadcast(msg);
+															break ;
+														}
+													}
+													else
+													{
+														std::string error = "ERROR :Wrong sign (MODE)\r\n";
+														send((*it)->getFd(), error.c_str(), error.length(), 0);
+														break ;
+													}
+												}
 												}
 											}
 											else
@@ -1278,15 +1315,6 @@ void Server::runServer()
 	// 	execMessage((*it));
 	// }
 }
-// if ((_fds[i].revents & POLLHUP) == POLLHUP)
-// {
-// 	std::vector<User *>::iterator it = std::find_if(_users.begin(), _users.end(), FindByFD(_fds[i].fd));
-// 	removeUser(_users, (*it)->getFd());
-// 	break ;
-// }
-// }
-// }
-// }
 
 //===================================<METHODS>====================================================
 
