@@ -85,7 +85,7 @@ class Server
 		static void			sigIntHandler(int signal);
 		static void			sigTermHandler(int signal);
 		static void			shutdownServer();
-		void				authenticateUser(int i);
+		bool				authenticateUser(int i);
 		Channel*			getChannel(std::string name);
 		int					isCommand(std::string command);
 

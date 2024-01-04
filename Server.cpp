@@ -126,7 +126,7 @@ int Server::isCommand(std::string command)
 	return (NOTCOMMAND);
 }
 
-void Server::authenticateUser(int i)
+bool Server::authenticateUser(int i)
 {
 	std::vector<User *>::iterator it = std::find_if(_users.begin(), _users.end(), FindByFD(_fds[i].fd));
 	if (!(*it)->getIsAuth())
@@ -139,8 +139,7 @@ void Server::authenticateUser(int i)
 				{
 					std::string error = "ERROR :Wrong password\r\n";
 					send((*it)->getFd(), error.c_str(), error.length(), 0);
-					removeUser(_users, (*it)->getFd());
-					break ;
+					return false;
 				}
 			}
 			if ((*it)->_incomingMsgs[i] == "NICK")
@@ -149,8 +148,7 @@ void Server::authenticateUser(int i)
 				{
 					std::string error = "ERROR :Nickname is already in use\r\n";
 					send((*it)->getFd(), error.c_str(), error.length(), 0);
-					removeUser(_users, (*it)->getFd());
-					break ;
+					return false;
 				}
 				(*it)->setNickname((*it)->_incomingMsgs[i + 1]); // user nick
 			}
@@ -167,6 +165,7 @@ void Server::authenticateUser(int i)
 			}
 		}
 	}
+	return true;
 }
 
 void Server::runServer()
@@ -259,7 +258,12 @@ void Server::runServer()
 						//     std::cout << i << ": " << (*it)->_incomingMsgs[i] << std::endl; //debugging, delete it before submit
 						if (!(*it)->getIsAuth())
 						{
-							authenticateUser(i);
+							if (!authenticateUser(i))
+							{
+								removeUser(_users, (*it)->getFd());
+								i--;
+								break ;
+							}
 
 							if (((*it)->getIsAuth() && !(*it)->getNickname().empty()) && (!(*it)->getUsername().empty()) &&
 								(!(*it)->getUserHost().empty()))
@@ -294,7 +298,7 @@ void Server::runServer()
 									break ;
 								}
 								(*it)->setNickname((*it)->_incomingMsgs[1]);
-								std::string msg = "Your nickname has been changed to " + (*it)->getNickname() + "\r\n";
+								std::string msg = ":Your nickname has been changed to " + (*it)->getNickname() + "\r\n";
 								std::cout << "nickname has been set to " << (*it)->getNickname() << "\n";
 								send((*it)->getFd(), msg.c_str(), msg.length(), 0);
 								break ;
@@ -308,14 +312,14 @@ void Server::runServer()
 									break ;
 								}
 								(*it)->setUsername((*it)->_incomingMsgs[1]);
-								std::string msg = "Your username has been changed to " + (*it)->getNickname() + "\r\n";
+								std::string msg = ":Your username has been changed to " + (*it)->getNickname() + "\r\n";
 								std::cout << "username has been set to " << (*it)->getUsername() << std::endl;
 								send((*it)->getFd(), msg.c_str(), msg.length(), 0);
 								break ;
 							}
 							case PING:
 							{
-								std::string pong = "PONG\r\n";
+								std::string pong = ":PONG\r\n";
 								send((*it)->getFd(), pong.c_str(), pong.length(), 0);
 								std::cout << "PONG has been sent to " << (*it)->getNickname() << std::endl;
 
@@ -339,6 +343,9 @@ void Server::runServer()
 								removeUser(_users, (*it)->getFd());
 								break ;
 							}
+							// [0] = JOIN
+							// [1] = channelName
+							// [2] = channelPassword
 							case JOIN:
 							{
 								if ((*it)->getIsAuth() == false)
@@ -1048,78 +1055,28 @@ void Server::runServer()
 													{
 														if (sign == '+')
 														{
-															// std::cout << MAGENTA << (*it)->_incomingMsgs[1] << RESET << "\n";
-															if ((*it)->_incomingMsgs.size() != 4) // в режиме оператора должно быть 4 аргумента
+															if ((*it)->_incomingMsgs.size() != 4)// в режиме оператора должно быть 4 аргумента
 															{
-																// std::cout << MAGENTA << (*it)->_incomingMsgs[1] << RESET << "\n";
-																if ((*it)->_incomingMsgs.size() != 4)// в режиме оператора должно быть 4 аргумента
-																{
-																	std::string error = "ERROR :Use 4 arguments to modify the operator mode (MODE)\r\n";
-																	send((*it)->getFd(), error.c_str(), error.length(), 0);
-																	break ;
-																}
-																std::map<std::string, User*>::iterator foundOp = (*itChannel)->operators.find((*it)->_incomingMsgs[3]);
-																if (foundOp != (*itChannel)->operators.end())
-																{
-																	std::string error = "ERROR :Such an operator already exists (MODE)\r\n";
-																	send((*it)->getFd(), error.c_str(), error.length(), 0);
-																	break ;
-																}
-																std::map<std::string, User*>::iterator itMembber = (*itChannel)->members.find((*it)->_incomingMsgs[3]);
-																if (itMembber != (*itChannel)->members.end())
-																{
-																	std::string msg = ":" + (*it)->getNickname() + " MODE " + (*itChannel)->getName() + " " + (*it)->_incomingMsgs[2] + "\r\n";
-																	send((*it)->getFd(), msg.c_str(), msg.length(), 0);
-																	// (*itChannel)->broadcast(msg);
-																	std::cout << MAGENTA << "LOG:: (" << (*it)->getNickname()  << ") GAVE (" << itMembber->first << ") the channel operator privilege"  << RESET << "\n";
-																	(*itChannel)->addOperator(itMembber->second,(*it));
-																	break ;
-																}
-																else
-																{
-																	std::string error = "ERROR :Such a member does not exist in the channel (MODE)\r\n";
-																	send((*it)->getFd(), error.c_str(), error.length(), 0);
-																	break ;
-																}
-																std::cout << MAGENTA << "DEBUGG:: MODE CHAN +o" << RESET << "\n";
+																std::string error = "ERROR :Use 4 arguments to modify the operator mode (MODE)\r\n";
+																send((*it)->getFd(), error.c_str(), error.length(), 0);
 																break ;
 															}
-															std::map<std::string, User *>::iterator foundOp = (*itChannel)->operators.find((*it)->_incomingMsgs[3]);
+															std::map<std::string, User*>::iterator foundOp = (*itChannel)->operators.find((*it)->_incomingMsgs[3]);
 															if (foundOp != (*itChannel)->operators.end())
 															{
-																if ((*it)->_incomingMsgs.size() != 4)// в режиме оператора должно быть 4 аргумента
-																{
-																	std::string error = "ERROR :Use 4 arguments to modify the operator mode (MODE)\r\n";
-																	send((*it)->getFd(), error.c_str(), error.length(), 0);
-																	break ;
-																}
-																std::map<std::string, User*>::iterator foundOp = (*itChannel)->operators.find((*it)->_incomingMsgs[3]);
-																if (foundOp == (*itChannel)->operators.end())
-																{
-																	std::string error = "ERROR :Such an operator does not exist (MODE)\r\n";
-																	send((*it)->getFd(), error.c_str(), error.length(), 0);
-																	break ;
-																}
-																else
-																{
-																	std::string msg = ":" + (*it)->getNickname() + " MODE " + (*itChannel)->getName() + " " + (*it)->_incomingMsgs[2] + "\r\n";
-																	send((*it)->getFd(), msg.c_str(), msg.length(), 0);
-																	// (*itChannel)->broadcast(msg);
-																	std::cout << MAGENTA << "LOG:: (" << (*it)->getNickname()  << ") TOOK channel operator privilege away from (" << foundOp->first << RESET << ")\n";
-																	(*itChannel)->takeOperatorPrivilege(foundOp->second);
-																	break ;
-																}
-																std::cout << MAGENTA << "DEBUGG:: MODE CHAN -o" << RESET << "\n";
+																std::string error = "ERROR :Such an operator already exists (MODE)\r\n";
+																send((*it)->getFd(), error.c_str(), error.length(), 0);
 																break ;
 															}
-															std::map<std::string, User *>::iterator itMembber = (*itChannel)->members.find((*it)->_incomingMsgs[3]);
+															std::map<std::string, User*>::iterator itMembber = (*itChannel)->members.find((*it)->_incomingMsgs[3]);
 															if (itMembber != (*itChannel)->members.end())
 															{
 																std::string msg = ":" + (*it)->getNickname() + " MODE " + (*itChannel)->getName() + " " + (*it)->_incomingMsgs[2] + "\r\n";
 																send((*it)->getFd(), msg.c_str(), msg.length(), 0);
 																// (*itChannel)->broadcast(msg);
-																(*itChannel)->addOperator(itMembber->second, (*it));
-																std::cout << MAGENTA << "DEBUGG:: (" << (*it)->getNickname() << ") GAVE (" << itMembber->first << ") the channel operator privilege" << RESET << "\n";
+																std::cout << MAGENTA << "LOG:: (" << (*it)->getNickname()  << ") GAVE (" << itMembber->first << ") the channel operator privilege"  << RESET << "\n";
+																(*itChannel)->addOperator(itMembber->second,(*it));
+																break ;
 															}
 															else
 															{
@@ -1150,8 +1107,9 @@ void Server::runServer()
 																std::string msg = ":" + (*it)->getNickname() + " MODE " + (*itChannel)->getName() + " " + (*it)->_incomingMsgs[2] + "\r\n";
 																send((*it)->getFd(), msg.c_str(), msg.length(), 0);
 																// (*itChannel)->broadcast(msg);
-																(*itChannel)->takeOperatorPrivilege(foundOp->second);
 																std::cout << MAGENTA << "DEBUGG:: (" << (*it)->getNickname() << ") TOOK channel operator privilege away from (" << foundOp->first << RESET << ")\n";
+																(*itChannel)->takeOperatorPrivilege(foundOp->second);
+																break ;
 															}
 															std::cout << MAGENTA << "DEBUGG:: MODE CHAN -o" << RESET << "\n";
 															break ;
@@ -1409,21 +1367,21 @@ int Server::acceptConection(int sockfd)
 
 void Server::removeUser(std::vector<User *> &users, int fd)
 {
+	// Удаление файлового дескриптора из _fds
+	std::vector<struct pollfd>::iterator itFd = std::find_if(_fds.begin(), _fds.end(), FindByFD(fd));
+	if (itFd != _fds.end())
+	{
+		_fds.erase(itFd);
+		std::cout << GREEN << "User has been removed from the server!" << RESET << std::endl;
+	}
 	// Удаление пользователя из списка пользователей
 	std::vector<User *>::iterator itUser = std::find_if(users.begin(), users.end(), FindByFD(fd));
 	if (itUser != users.end())
 	{
 		(*itUser)->closeSocket();
 		users.erase(itUser);
-		delete *itUser;
+		// delete *itUser;
 	}
-	// Удаление файлового дескриптора из _fds
-	std::vector<struct pollfd>::iterator itFd = std::find_if(_fds.begin(), _fds.end(), FindByFD(fd));
-	if (itFd != _fds.end())
-	{
-		_fds.erase(itFd);
-	}
-	std::cout << GREEN << "User has been removed from the server!" << RESET << std::endl;
 }
 
 //====================================<SIGNALS && SHUTDOWN>====================================
