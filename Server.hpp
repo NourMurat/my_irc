@@ -17,6 +17,7 @@
 #include "User.hpp"
 #include "Channel.hpp"
 #include <csignal>
+#include <cstdlib> // exit(signal)
 
 #include <netinet/in.h>
 

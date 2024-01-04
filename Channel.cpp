@@ -204,8 +204,7 @@ int        Channel::removeUserFromChannel(User* client)
         std::cout << GREEN << "LOG:: REMOVE OPERATOR (" << operators[client->getNickname()]->getNickname() << ") FROM THE CHANNEL (" << getName() << ") !!!" << RESET << "\n";
         std::string channelMsg = ":" + client->getNickname() + " PART " + name + " :Goodbye operator!" + "\r\n";
 		broadcast(channelMsg, client);
-        takeOperatorPrivilege(itOperator->second);
-        members.erase(itOperator);
+        operators.erase(itOperator);
 
         // std::string logMessage = client->getNickname() + " has left channel " + name;
         // log(logMessage);
@@ -225,13 +224,13 @@ int        Channel::removeUserFromChannel(User* client)
             
             owner = itOperator->second; // Назначаем нового хозяина
             std::string nickOperator = itOperator->first;
-            operators.erase(itOperator);
             if (operators.find(nickOperator) == operators.end())
             {
                 std::cout << GREEN << "LOG:: (" << owner->getNickname() << ") IS A NEW OWNER OF THE CHANNEL (" << name << ") !!!" << RESET << "\n";
                 std::string channelMsg = "NOTICE " + name + " :" + client->getNickname() + " no more owner of the channel " + name + ". New owner is " + owner->getNickname() + "\r\n";
                 broadcast(channelMsg, client);
             }
+            operators.erase(itOperator);
         }
         // Если операторов нет, но есть обычные члены
         else if (!members.empty())
@@ -242,13 +241,13 @@ int        Channel::removeUserFromChannel(User* client)
             
             owner = itMember->second; // Назначаем нового хозяина
             std::string nickMember = itMember->first;
-            members.erase(itMember);
             if (members.find(nickMember) == members.end())
             {
                 std::cout << GREEN << "LOG:: (" << owner->getNickname() << ") IS A NEW OWNER OF THE CHANNEL (" << name << ") !!!" << RESET << "\n";
                 std::string channelMsg = "NOTICE " + name + " :" + client->getNickname() + " no more owner of the channel " + name + ". New owner is " + owner->getNickname() + "\r\n";
                 broadcast(channelMsg, client);
             }
+            members.erase(itMember);
         }
         // Если хозяин - единственный член канала
         else
@@ -258,7 +257,7 @@ int        Channel::removeUserFromChannel(User* client)
             return 1;
         }
     // Deleting a channel a User is a member of
-    client->removeChannelOfClient(name);
+    // client->removeChannelOfClient(name);
     }
     return 0;
 }
@@ -273,7 +272,7 @@ void        Channel::takeOperatorPrivilege(User* target)
 {
     // // Check if the User is the channel owner
     // if (owner == target) {
-    //     target->write("NOTICE " + name + " :You are not authorized to remove owner.");
+    //     target->write("NOTICE " + name + " :You are not authorized to take owner privilege.");
     //     return;
     // }
     
@@ -284,12 +283,12 @@ void        Channel::takeOperatorPrivilege(User* target)
         // Adding an operator to the ordinary membership map
         members[target->getNickname()] = target;
         
-        operators.erase(it);
         std::string message = "NOTICE " + name + " :(" + target->getNickname() + ") no more Operator in this chanel!\r\n";
         broadcast(message);
 
         // std::string logMessage = target->getNickname() + " is no longer an operator in channel " + name;
         // log(logMessage);
+        operators.erase(it);
     }
 }
 
