@@ -67,13 +67,13 @@ int Server::checkDupNickname(std::vector<User *> users, std::string nickname)
 void Server::welcomeMsg(User *user)
 {
 	std::string welcomeMsg;
-	welcomeMsg = ":IRC 001 " + user->getNickname() + " :Welcome to the Internet Relay Network " + user->getNickname() + "\n";
+	welcomeMsg = ":IRC 001 " + user->getNickname() + "!" + user->getUsername() + "@" + user->getUserHost() + " :Welcome to the Internet Relay Network " + user->getNickname() + "\n";
 	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
-	welcomeMsg = ":IRC 002 " + user->getNickname() + " :Your host is " + _serverName + ", running version V1.0\n";
+	welcomeMsg = ":IRC 002 " + user->getNickname() + "!" + user->getUsername() + "@" + user->getUserHost() + " :Your host is " + _serverName + ", running version V1.0\n";
 	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
-	welcomeMsg = ":IRC 003 " + user->getNickname() + " :This server was created in December 2023\n";
+	welcomeMsg = ":IRC 003 " + user->getNickname() + "!" + user->getUsername() + "@" + user->getUserHost() + " :This server was created in December 2023\n";
 	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
-	welcomeMsg = ":IRC 004 " + user->getNickname() + " :<servername> <version> <available user modes> <available channel modes>\n";
+	welcomeMsg = ":IRC 004 " + user->getNickname() + "!" + user->getUsername() + "@" + user->getUserHost() + " :<servername> <version> <available user modes> <available channel modes>\n";
 	send(user->getFd(), welcomeMsg.c_str(), welcomeMsg.length(), 0);
 }
 
@@ -224,7 +224,7 @@ void Server::runServer()
 				{
 					// New client connection and add it to "users, _fds" vectors
 					int clientFd = acceptConection(sockfd);
-					std::cout << MAGENTA << "DEBUG:: User has been created with class User FD:" << _users[i]->getFd() << RESET << std::endl; // debugging -> create class User
+					std::cout << GREEN << "LOG:: User has been created with class User FD:" << _users[i]->getFd() << RESET << std::endl; // debugging -> create class User
 					std::string firstServerMsg = "CAP * ACK multi-prefix\r\n";
 					send(clientFd, firstServerMsg.c_str(), firstServerMsg.length(), 0);
 					std::cout << BLUE << "new client connected FD:" << clientFd << RESET << std::endl;
@@ -238,8 +238,7 @@ void Server::runServer()
 						std::cerr << RED << "Read error on FD:" << _fds[i].fd << RESET << std::endl;
 					else if (byteRead == 0)
 					{
-						std::cout << RED << "Client disconnected FD:" << _fds[i].fd << RESET << std::endl
-								  << std::flush;
+						std::cout << RED << "Client disconnected FD:" << _fds[i].fd << RESET << std::endl;
 						removeUser(_users, _fds[i].fd);
 						// _fds.erase(_fds.begin() + i);
 						i--;
@@ -319,12 +318,11 @@ void Server::runServer()
 							}
 							case PING:
 							{
-								std::string pong = ":PONG\r\n";
+								std::string pong = "PONG\r\n";
 								send((*it)->getFd(), pong.c_str(), pong.length(), 0);
 								std::cout << "PONG has been sent to " << (*it)->getNickname() << std::endl;
 
-								std::cout << "\nSERVER`S DATA:"
-										  << "\n";
+								std::cout << "\nSERVER`S DATA:" << "\n";
 								std::cout << "Server`s PORT \t\t" << _port << "\n";
 								std::cout << "Server`s PASSWORD \t" << _password << "\n";
 								std::cout << "Server`s NAME \t\t" << _serverName << "\n\n";
@@ -360,8 +358,7 @@ void Server::runServer()
 									if ((*itChannel)->getName() == (*it)->_incomingMsgs[1])
 									{
 										channelExists = true;
-										std::cout << MAGENTA << "DEBUG:: existing channel\n"
-												  << RESET << std::endl;
+										std::cout << MAGENTA << "DEBUG:: existing channel\n" << RESET << std::endl;
 										if ((*itChannel)->getLimit() != 0 && (*itChannel)->countUsers((*itChannel)) >= (*itChannel)->getLimit())
 										{
 											std::string msg = "ERROR :Channel is full\r\n";
@@ -388,14 +385,7 @@ void Server::runServer()
 										{
 											std::string msg2 = ":" + (*it)->getNickname() + " JOIN " + (*itChannel)->getName() + "\r\n";
 											(*itChannel)->broadcast(msg2);
-											// for (std::map<std::string, User *>::iterator itMember = (*itChannel)->members.begin(); itMember != (*itChannel)->members.end(); ++itMember)
-											// {
-											//  if (itMember->second->getFd() != -1)
-											//      send(itMember->second->getFd(), msg2.c_str(), msg2.length(), 0);
-											// }
-											// send((*it)->getFd(), msg.c_str(), msg.length(), 0);
-											std::cout << MAGENTA << "DEBUG:: JOIN NEW MEMBER!\n"
-													  << RESET << std::endl;
+											std::cout << MAGENTA << "DEBUG:: JOIN NEW MEMBER!\n" << RESET << std::endl;
 										}
 										break ;
 									}
@@ -405,11 +395,10 @@ void Server::runServer()
 									Channel *newChannel = new Channel((*it)->_incomingMsgs[1], (*it));
 									if (!newChannel)
 										break ;
-									std::cout << MAGENTA << "DEBUGG:: Channel created - " << newChannel->getName() << RESET << "\n";
+									std::cout << GREEN << "LOG:: Channel created - " << newChannel->getName() << RESET << "\n";
 									_channels.push_back(newChannel);
 									std::string msg = std::string(":IRC 332 ") + (*it)->getNickname() + " " + newChannel->getName() + " " + newChannel->getTopic() + "\r\n";
 									send((*it)->getFd(), msg.c_str(), msg.length(), 0);
-									// std::map<std::string, User *>::iterator found = newChannel->members.find((*it)->getNickname());
 									if (newChannel->isOwner((*it)))
 									{
 										std::string msg2 = ":" + (*it)->getNickname() + " JOIN " + newChannel->getName() + " \r\n";
@@ -453,16 +442,13 @@ void Server::runServer()
 								else if ((*it)->_incomingMsgs[1][0] == '#')
 								{
 									std::string chanName = (*it)->_incomingMsgs[1];
-									bool userIsInChannel = false;
 									for (std::vector<Channel *>::iterator itChannel = _channels.begin(); itChannel != _channels.end(); ++itChannel)
 									{
 										if ((*itChannel)->getName() == chanName)
 										{
-											// std::map<std::string, User*>::iterator itLiveUser = std::find_if((*itChannel)->members.begin(), (*itChannel)->members.end(), FindByNickname((*it)->getNickname()));
 											if ((*itChannel)->isMember((*it)) || (*itChannel)->isOperator((*it)) || (*itChannel)->isOwner((*it)))
 											{
 												std::cout << MAGENTA << "DEBUGG:: Channel MSG" << RESET << "\n";
-												userIsInChannel = true;
 												std::string chanMSG = (*it)->_incomingMsgs[2];
 												for (unsigned int i = 3; i < (*it)->_incomingMsgs.size(); i++)
 													chanMSG += " " + (*it)->_incomingMsgs[i];
@@ -470,13 +456,12 @@ void Server::runServer()
 												(*itChannel)->broadcast(msg, (*it));
 												break ;
 											}
-											else if (!userIsInChannel)
+											else
 											{
 												std::string error = "ERROR :You're not on that channel\r\n";
 												send((*it)->getFd(), error.c_str(), error.length(), 0);
 												break ;
 											}
-											break ;
 										}
 									}
 									break ;
@@ -544,25 +529,6 @@ void Server::runServer()
 										send((*it)->getFd(), msg.c_str(), msg.length(), 0);
 										break ;
 									}
-									// Channel *newChannel = new Channel((*it)->_incomingMsgs[1], (*it));
-									// if(messages.size() < 2)
-									// 	return;
-									// size_t x = 0;
-									// if ((*it)->_incomingMsgs[1][0] != '#')
-									// 	(*it)->_incomingMsgs[1].insert(0, "#");
-									// newChannel = irc::Server::serverInstance->getChannel(user->_channelToJoin.at(x));
-									// join_channel(user->_channelToJoin.at(x), user, channel, "");
-									// x++;
-									// if ((*it)->_incomingMsgs.size() < 2)
-									// 	break ;
-									// if ((*it)->_incomingMsgs[1][0] != '#')
-									// 	(*it)->_incomingMsgs[1].insert(0, "#");
-									// bool channelExists = false;
-									// for (std::vector<Channel *>::iterator itChannel = _channels.begin(); itChannel != _channels.end(); ++itChannel)
-									// {
-									// 	(*it)->write("You have been authorized\r\n");
-									// 	(*it)->setIsAuth(true);
-									// }
 								}
 								break ;
 							}
@@ -575,23 +541,27 @@ void Server::runServer()
 								}
 
 								if ((*it)->_incomingMsgs.size() < 2)
+								{
 									(*it)->write("ERROR :No channel or user given\r\n");
-
+									break ;
+								}
 								if ((*it)->_incomingMsgs[1][0] != '#')
 									(*it)->_incomingMsgs[1].insert(0, "#");
 
-								bool userIsInChannel = false;
 								for (std::vector<Channel *>::iterator itChannel = _channels.begin(); itChannel != _channels.end(); ++itChannel)
 								{
 									if ((*itChannel)->getName() == (*it)->_incomingMsgs[1])
 									{
-										std::cout << MAGENTA << "DEBUGG:: PART CHAN" << RESET << "\n";
-										userIsInChannel = true;
-										if ((*itChannel)->removeUserFromChannel((*it)) == 1)
-											removeChannelFromServer((*itChannel)->getName());
-										break ;
+										std::cout << MAGENTA << "DEBUGG:: channels:  " << (*itChannel)->getName() << " == " << (*it)->_incomingMsgs[1] << RESET << "\n";
+										if ((*itChannel)->isMember((*it)) || (*itChannel)->isOperator((*it)) || (*itChannel)->isOwner((*it)))
+										{
+											std::cout << MAGENTA << "DEBUGG:: PART CHAN" << RESET << "\n";
+											if ((*itChannel)->removeUserFromChannel((*it)) == 1)
+												removeChannelFromServer((*itChannel)->getName());
+											break ;
+										}
 									}
-									else if (!userIsInChannel)
+									else
 									{
 										std::string error = "ERROR :You're not on that channel\r\n";
 										send((*it)->getFd(), error.c_str(), error.length(), 0);
@@ -1027,12 +997,12 @@ void Server::runServer()
 							{
 								if ((*it)->getIsAuth() == false)
 									break ;
-								if ((*it)->_incomingMsgs.size() < 3 || (*it)->_incomingMsgs.size() > 4)
-								{
-									std::string error = "ERROR :Wrong numbers of arguments (MODE)!\r\n";
-									send((*it)->getFd(), error.c_str(), error.length(), 0);
-									break ;
-								}
+								// if ((*it)->_incomingMsgs.size() < 3 || (*it)->_incomingMsgs.size() > 4)
+								// {
+								// 	std::string error = "ERROR :Wrong numbers of arguments (MODE)!\r\n";
+								// 	send((*it)->getFd(), error.c_str(), error.length(), 0);
+								// 	break ;
+								// }
 								std::cout << MAGENTA << (*it)->_incomingMsgs[1] << RESET << "\n";
 
 								if ((*it)->_incomingMsgs[1][0] == '#')
@@ -1074,7 +1044,7 @@ void Server::runServer()
 																std::string msg = ":" + (*it)->getNickname() + " MODE " + (*itChannel)->getName() + " " + (*it)->_incomingMsgs[2] + "\r\n";
 																send((*it)->getFd(), msg.c_str(), msg.length(), 0);
 																// (*itChannel)->broadcast(msg);
-																std::cout << MAGENTA << "LOG:: (" << (*it)->getNickname()  << ") GAVE (" << itMembber->first << ") the channel operator privilege"  << RESET << "\n";
+																std::cout << GREEN << "LOG:: (" << (*it)->getNickname()  << ") GAVE (" << itMembber->first << ") the channel operator privilege"  << RESET << "\n";
 																(*itChannel)->addOperator(itMembber->second,(*it));
 																break ;
 															}
@@ -1107,7 +1077,7 @@ void Server::runServer()
 																std::string msg = ":" + (*it)->getNickname() + " MODE " + (*itChannel)->getName() + " " + (*it)->_incomingMsgs[2] + "\r\n";
 																send((*it)->getFd(), msg.c_str(), msg.length(), 0);
 																// (*itChannel)->broadcast(msg);
-																std::cout << MAGENTA << "DEBUGG:: (" << (*it)->getNickname() << ") TOOK channel operator privilege away from (" << foundOp->first << RESET << ")\n";
+																std::cout << GREEN << "LOG:: (" << (*it)->getNickname() << ") TOOK channel operator privilege away from (" << foundOp->first << RESET << ")\n";
 																(*itChannel)->takeOperatorPrivilege(foundOp->second);
 																break ;
 															}

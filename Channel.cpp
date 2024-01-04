@@ -81,7 +81,7 @@ void        Channel::addMember(User* client)
         // if (members.find(client->getNickname()) == owner)
         //     return;
         members[client->getNickname()] = client;
-        std::cout << MAGENTA << "DEBUGG:: ADD MEMBER (" << members[client->getNickname()]->getNickname() << ") IN THE NEW CHANNEL (" << getName() << ") !!!" << RESET << "\n";
+        std::cout << GREEN << "LOG:: ADD MEMBER (" << members[client->getNickname()]->getNickname() << ") IN THE NEW CHANNEL (" << getName() << ") !!!" << RESET << "\n";
     }
 }
 
@@ -153,7 +153,7 @@ void        Channel::addOperator(User* client, User* invoker)
     //         std::string message = "NOTICE " + name + " :(" + client->getNickname() + ") has become Operator in this chanel!\r\n";
     //         broadcast(message);
     //         if (members.find(client->getNickname()) == members.end())
-    //             std::cout << MAGENTA << "LOG:: ADD OPERATOR (" << members[client->getNickname()]->getNickname() << ") IN THE CHANNEL (" << name << ") !!!" << RESET << "\n";
+    //             std::cout << GREEN << "LOG:: ADD OPERATOR (" << members[client->getNickname()]->getNickname() << ") IN THE CHANNEL (" << name << ") !!!" << RESET << "\n";
     //     }
     // }
 }
@@ -191,7 +191,7 @@ int        Channel::removeUserFromChannel(User* client)
     
     if (itMember != members.end()) 
     {
-        std::cout << MAGENTA << "LOG:: REMOVE MEMBER (" << members[client->getNickname()]->getNickname() << ") FROM THE CHANNEL (" << getName() << ") !!!" << RESET << "\n";
+        std::cout << GREEN << "LOG:: REMOVE MEMBER (" << members[client->getNickname()]->getNickname() << ") FROM THE CHANNEL (" << getName() << ") !!!" << RESET << "\n";
         std::string channelMsg = ":" + client->getNickname() + " PART " + name + " :Goodbye member!" + "\r\n";
 		broadcast(channelMsg, client);
         members.erase(itMember);
@@ -201,7 +201,7 @@ int        Channel::removeUserFromChannel(User* client)
     }
     else if (itOperator != operators.end())
     {
-        std::cout << MAGENTA << "LOG:: REMOVE OPERATOR (" << operators[client->getNickname()]->getNickname() << ") FROM THE CHANNEL (" << getName() << ") !!!" << RESET << "\n";
+        std::cout << GREEN << "LOG:: REMOVE OPERATOR (" << operators[client->getNickname()]->getNickname() << ") FROM THE CHANNEL (" << getName() << ") !!!" << RESET << "\n";
         std::string channelMsg = ":" + client->getNickname() + " PART " + name + " :Goodbye operator!" + "\r\n";
 		broadcast(channelMsg, client);
         takeOperatorPrivilege(itOperator->second);
@@ -212,7 +212,7 @@ int        Channel::removeUserFromChannel(User* client)
     }
     else if (owner == client)
     {
-        std::cout << MAGENTA << "LOG:: REMOVE OWNER (" << owner->getNickname() << ") FROM THE CHANNEL (" << name << ") !!!" << RESET << "\n";
+        std::cout << GREEN << "LOG:: REMOVE OWNER (" << owner->getNickname() << ") FROM THE CHANNEL (" << name << ") !!!" << RESET << "\n";
         std::string channelMsg = ":" + client->getNickname() + " PART " + name + " :Goodbye owner!" + "\r\n";
         broadcast(channelMsg);
 
@@ -228,7 +228,7 @@ int        Channel::removeUserFromChannel(User* client)
             operators.erase(itOperator);
             if (operators.find(nickOperator) == operators.end())
             {
-                std::cout << MAGENTA << "LOG:: (" << owner->getNickname() << ") IS A NEW OWNER OF THE CHANNEL (" << name << ") !!!" << RESET << "\n";
+                std::cout << GREEN << "LOG:: (" << owner->getNickname() << ") IS A NEW OWNER OF THE CHANNEL (" << name << ") !!!" << RESET << "\n";
                 std::string channelMsg = "NOTICE " + name + " :" + client->getNickname() + " no more owner of the channel " + name + ". New owner is " + owner->getNickname() + "\r\n";
                 broadcast(channelMsg, client);
             }
@@ -245,7 +245,7 @@ int        Channel::removeUserFromChannel(User* client)
             members.erase(itMember);
             if (members.find(nickMember) == members.end())
             {
-                std::cout << MAGENTA << "LOG:: (" << owner->getNickname() << ") IS A NEW OWNER OF THE CHANNEL (" << name << ") !!!" << RESET << "\n";
+                std::cout << GREEN << "LOG:: (" << owner->getNickname() << ") IS A NEW OWNER OF THE CHANNEL (" << name << ") !!!" << RESET << "\n";
                 std::string channelMsg = "NOTICE " + name + " :" + client->getNickname() + " no more owner of the channel " + name + ". New owner is " + owner->getNickname() + "\r\n";
                 broadcast(channelMsg, client);
             }
@@ -254,7 +254,7 @@ int        Channel::removeUserFromChannel(User* client)
         else
         {
             // Логика удаления канала
-            std::cout << MAGENTA << "LOG:: the channel (" + name + ") was closed!" << RESET << "\n";
+            std::cout << GREEN << "LOG:: the channel (" + name + ") was closed!" << RESET << "\n";
             return 1;
         }
     // Deleting a channel a User is a member of
