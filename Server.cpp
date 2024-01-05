@@ -359,7 +359,10 @@ void Server::runServer()
 							case JOIN:
 							{
 								if ((*it)->getIsAuth() == false)
+								{
 									(*it)->write("ERROR :You're not authorized\r\n");
+									break ;
+								}
 								if ((*it)->_incomingMsgs.size() < 2)
 									break ;
 								if ((*it)->_incomingMsgs[1][0] != '#')
@@ -514,7 +517,7 @@ void Server::runServer()
 								}
 								if ((*it)->getIsAuth() == true)
 								{
-									(*it)->write("ERROR :Can't change pass once authorized\r\n");
+									// (*it)->write("ERROR :Can't change pass once authorized\r\n");
 									break ;
 								}
 								if ((*it)->_incomingMsgs[1] != _password)
@@ -703,12 +706,6 @@ void Server::runServer()
 									send((*it)->getFd(), error.c_str(), error.length(), 0);
 									break ;
 								}
-								if ((*it)->_incomingMsgs.size() < 3)
-								{
-									std::string error = "ERROR :No channel or topic\r\n";
-									send((*it)->getFd(), error.c_str(), error.length(), 0);
-									break ;
-								}
 								if ((*it)->_incomingMsgs[1][0] != '#')
 									(*it)->_incomingMsgs[1].insert(0, "#");
 								bool userIsInChannel = false;
@@ -716,11 +713,17 @@ void Server::runServer()
 								{
 									if ((*itChannel)->getName() == (*it)->_incomingMsgs[1])
 									{
+										if ((*it)->_incomingMsgs.size() < 3)
+										{
+											std::string error = "ERROR :No channel or topic\r\n";
+											send((*it)->getFd(), error.c_str(), error.length(), 0);
+											break ;
+										}
+										userIsInChannel = true;
 										if (((*itChannel)->isOperator((*it)) || (*itChannel)->isOwner((*it))) 
 												&& (((*itChannel)->hasTopicRestrictions() == true) && (!(*it)->_incomingMsgs[2].empty())))
 										{
 											std::cout << MAGENTA << "DEBUGG:: TOPIC ONLY OPERATORS" << RESET << "\n";
-											userIsInChannel = true;
 											(*itChannel)->setTopic((*it)->_incomingMsgs[2]);
 											std::string msg = ":" + (*it)->getNickname() + " TOPIC " + (*itChannel)->getName() + " " + (*itChannel)->getTopic() + "\r\n";
 											// send((*it)->getFd(), msg.c_str(), msg.length(), 0);
@@ -738,7 +741,7 @@ void Server::runServer()
 												&& ((*itChannel)->hasTopicRestrictions() == false) && (!(*it)->_incomingMsgs[2].empty()))
 										{
 											std::cout << MAGENTA << "DEBUGG:: TOPIC EVERYONE" << RESET << "\n";
-											userIsInChannel = true;
+											// userIsInChannel = true;
 											(*itChannel)->setTopic((*it)->_incomingMsgs[2]);
 											std::string msg = ":" + (*it)->getNickname() + " TOPIC " + (*itChannel)->getName() + " " + (*itChannel)->getTopic() + "\r\n";
 											// send((*it)->getFd(), msg.c_str(), msg.length(), 0);
@@ -775,13 +778,14 @@ void Server::runServer()
 								if ((*it)->_incomingMsgs[2][0] != '#')
 									(*it)->_incomingMsgs[2].insert(0, "#");
 								bool userIsInChannel = false;
+								bool targetinServer = false;
 								for (std::vector<Channel *>::iterator itChannel = _channels.begin(); itChannel != _channels.end(); ++itChannel)
 								{
 									if ((*itChannel)->getName() == (*it)->_incomingMsgs[2])
 									{
+										userIsInChannel = true;
 										if (((*itChannel)->isOperator((*it)) || (*itChannel)->isOwner((*it))))
 										{
-											userIsInChannel = true;
 											for (std::vector<User *>::iterator itUser = _users.begin(); itUser != _users.end(); ++itUser)
 											{
 												if ((itUser != _users.end()))
@@ -793,9 +797,10 @@ void Server::runServer()
 													}
 													if ((*itUser)->getNickname() == (*it)->_incomingMsgs[1])
 													{
+														targetinServer = true;
 														// std::cout << MAGENTA << "DEBUGG:: 123 INVITE CHAN" << RESET << "\n";
 														std::string msg = ":" + (*it)->getNickname() + " INVITE " + (*itChannel)->getName() + " " + (*it)->_incomingMsgs[2] + "\r\n";
-														send((*itUser)->getFd(), msg.c_str(), msg.length(), 0);
+														send((*it)->getFd(), msg.c_str(), msg.length(), 0);
 														(*itChannel)->addInvited(*itUser);
 														std::map<std::string, User *>::iterator itFound = (*itChannel)->invited.find((*itUser)->getNickname());
 														if (itFound != (*itChannel)->invited.end())
@@ -813,11 +818,11 @@ void Server::runServer()
 														}
 													}
 												}
-												else
-												{
-													(*it)->write("ERROR :User is not connected\r\n");
-													break ;
-												}
+											}
+											if (!(targetinServer))
+											{
+												(*it)->write("ERROR :User is not connected\r\n");
+												break ;
 											}
 										}
 										else if ((!(*itChannel)->isOperator((*it)) && !(*itChannel)->isOwner((*it))) || (*itChannel)->isMember((*it)))
@@ -845,7 +850,16 @@ void Server::runServer()
 							case MODE:
 							{
 								if ((*it)->getIsAuth() == false)
+								{
+									(*it)->write("ERROR :You're not authorized\r\n");
 									break ;
+								}
+									if ((*it)->_incomingMsgs.size() < 3)
+									{
+										std::string error = "ERROR :Wrong numbers of arguments (MODE)\r\n";
+										send((*it)->getFd(), error.c_str(), error.length(), 0);
+										break ;
+									}
 								std::cout << MAGENTA << "DEBUGG:: check second arg --> " << (*it)->_incomingMsgs[1] << RESET << "\n";
 								if ((*it)->_incomingMsgs[1][0] == '#')
 								{
