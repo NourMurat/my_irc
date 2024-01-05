@@ -115,7 +115,7 @@ int Server::isCommand(std::string command)
 		return (MODE);
 	if (command2 == "QUIT" || command2 == "/QUIT")
 		return (QUIT);
-	if (command2 == "PASS" || command2 == "/PASS")
+	if (command2 == "/PASS")
 		return (PASS);
 	if (command2 == "INFO" || command2 == "/INFO")
 		return (INFO);
@@ -287,6 +287,11 @@ void Server::runServer()
 							case NICK:
 							{
 								std::string check = (*it)->_incomingMsgs[1];
+								if ((*it)->getIsAuth() == true)
+								{
+									(*it)->write("ERROR :Can't change nick once authorized\r\n");
+									break ;
+								}
 								if (check.empty())
 								{
 									(*it)->write("ERROR :No nick given\r\n");
@@ -309,6 +314,11 @@ void Server::runServer()
 							case USER:
 							{
 								std::string check = (*it)->_incomingMsgs[1];
+								if ((*it)->getIsAuth() == true)
+								{
+									(*it)->write("ERROR :Can't change user once authorized\r\n");
+									break ;
+								}
 								if (check.empty())
 								{
 									(*it)->write("ERROR :No username given\r\n");
@@ -375,12 +385,28 @@ void Server::runServer()
 											send((*it)->getFd(), msg.c_str(), msg.length(), 0);
 											break ;
 										}
-										if (!(*itChannel)->getPass().empty() && (*itChannel)->getPass() != (*it)->_incomingMsgs[2])
-										{
-											std::string msg = "ERROR :Wrong password\r\n";
-											send((*it)->getFd(), msg.c_str(), msg.length(), 0);
-											break ;
-										}
+										std::string pass_check = (*itChannel)->getPass();
+                                        if (!pass_check.empty())
+                                        {
+                                            if ((*it)->_incomingMsgs.size() < 3)
+                                            {
+                                                std::string msg = "ERROR :No password given\r\n";
+                                                send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+                                                break ;
+                                            }
+                                            if ((*itChannel)->getPass() != (*it)->_incomingMsgs[2])
+                                            {
+                                                std::string msg = "ERROR :Wrong password\r\n";
+                                                send((*it)->getFd(), msg.c_str(), msg.length(), 0);
+                                                break ;
+                                            }
+                                            std::cout << MAGENTA << "DEBUG:: password check\n" << RESET << std::endl;
+                                            std::cout << MAGENTA << (*itChannel)->getPass() << RESET << std::endl;
+                                            std::string check = (*it)->_incomingMsgs[2];
+                                            if (check.empty())
+                                                break ;
+                                            std::cout << "check = " << check << std::endl;
+                                        }
 										if ((*itChannel)->addMember((*it)) == 1)
 											break ;
 										std::string msg = std::string(":IRC 332 ") + (*it)->getNickname() + " " + (*itChannel)->getName() + " " + (*itChannel)->getTopic() + "\r\n";
@@ -424,7 +450,11 @@ void Server::runServer()
 									(*it)->write("ERROR :You're not authorized\r\n");
 									break ;
 								}
-
+								if ((*it)->_incomingMsgs.size() < 3)
+								{
+									(*it)->write("ERROR :Wrong number of arguments PRIVMSG\r\n");
+									break ;
+								}
 								if ((*it)->_incomingMsgs[1][0] != '#')
 								{
 									std::cout << MAGENTA << "DEBUGG:: Ordinary MSG" << RESET << "\n";
@@ -480,6 +510,11 @@ void Server::runServer()
 							case PASS:
 							{
 								std::string check = (*it)->_incomingMsgs[1];
+								if ((*it)->getIsAuth() == true)
+								{
+									(*it)->write("ERROR :Can't change pass once authorized\r\n");
+									break ;
+								}
 								if (check.empty())
 								{
 									(*it)->write("ERROR :No password given\r\n");
@@ -681,42 +716,44 @@ void Server::runServer()
 								{
 									if ((*itChannel)->getName() == (*it)->_incomingMsgs[1])
 									{
-										if (((*itChannel)->isOperator((*it)) || (*itChannel)->isOwner((*it))) && (((*itChannel)->hasTopicRestrictions() == true) && (!(*it)->_incomingMsgs[2].empty())))
+										if (((*itChannel)->isOperator((*it)) || (*itChannel)->isOwner((*it))) 
+												&& (((*itChannel)->hasTopicRestrictions() == true) && (!(*it)->_incomingMsgs[2].empty())))
 										{
 											std::cout << MAGENTA << "DEBUGG:: TOPIC ONLY OPERATORS" << RESET << "\n";
 											userIsInChannel = true;
 											(*itChannel)->setTopic((*it)->_incomingMsgs[2]);
-											std::string msg = ":" + (*it)->getNickname() + " TOPIC " + (*itChannel)->getName() + " :" + (*itChannel)->getTopic() + "\r\n";
+											std::string msg = ":" + (*it)->getNickname() + " TOPIC " + (*itChannel)->getName() + " " + (*itChannel)->getTopic() + "\r\n";
 											// send((*it)->getFd(), msg.c_str(), msg.length(), 0);
 											(*itChannel)->broadcast(msg);
 											break ;
 										}
-										else
+										else if ((*itChannel)->isMember((*it)) && (((*itChannel)->hasTopicRestrictions() == true) && (!(*it)->_incomingMsgs[2].empty())))
 										{
 											std::string error = "ERROR :A restriction has been set! \nONLY OPERATORS and channel OWNER can set TOPIC!\r\n";
 											send((*it)->getFd(), error.c_str(), error.length(), 0);
 											break ;
 										}
 
-										if (((*itChannel)->isOperator((*it)) || (*itChannel)->isOwner((*it)) || (*itChannel)->isMember(*it)) && ((*itChannel)->hasTopicRestrictions() == false) && (!(*it)->_incomingMsgs[2].empty()))
+										if (((*itChannel)->isOperator((*it)) || (*itChannel)->isOwner((*it)) || (*itChannel)->isMember(*it)) 
+												&& ((*itChannel)->hasTopicRestrictions() == false) && (!(*it)->_incomingMsgs[2].empty()))
 										{
 											std::cout << MAGENTA << "DEBUGG:: TOPIC EVERYONE" << RESET << "\n";
 											userIsInChannel = true;
 											(*itChannel)->setTopic((*it)->_incomingMsgs[2]);
-											std::string msg = ":" + (*it)->getNickname() + " TOPIC " + (*itChannel)->getName() + " :" + (*it)->_incomingMsgs[2] + "\r\n";
+											std::string msg = ":" + (*it)->getNickname() + " TOPIC " + (*itChannel)->getName() + " " + (*itChannel)->getTopic() + "\r\n";
 											// send((*it)->getFd(), msg.c_str(), msg.length(), 0);
 											(*itChannel)->broadcast(msg);
 											break ;
 										}
 
-										if (!userIsInChannel)
-										{
-											std::string error = "ERROR :You're not on that channel\r\n";
-											send((*it)->getFd(), error.c_str(), error.length(), 0);
-											break ;
-										}
 										break ;
 									}
+								}
+								if (!userIsInChannel)
+								{
+									std::string error = "ERROR :You're not on that channel\r\n";
+									send((*it)->getFd(), error.c_str(), error.length(), 0);
+									break ;
 								}
 								break ;
 							}

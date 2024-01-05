@@ -33,7 +33,7 @@ const std::map<std::string, User* >&    Channel::getBanned() const { return bann
 
 void        Channel::setName(std::string nameValue) { name = nameValue; }
 void        Channel::setPass(std::string passValue) { pass = passValue; }
-void        Channel::setTopic(std::string topicValue) { pass = topicValue; }
+void        Channel::setTopic(std::string topicValue) { topic = topicValue; }
 void        Channel::setLimit(size_t limitValue) { limit = limitValue; }
 void        Channel::setInviteOnly(bool value) { inviteOnly = value; }
 void        Channel::setTopicRestrictions(bool value) { topicRestrictions = value; }
