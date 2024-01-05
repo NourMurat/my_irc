@@ -286,15 +286,14 @@ void Server::runServer()
 							// [1] = nickName
 							case NICK:
 							{
-								std::string check = (*it)->_incomingMsgs[1];
+								if ((*it)->_incomingMsgs.size() < 2)
+								{
+									(*it)->write("ERROR :No nickname given\r\n");
+									break ;
+								}
 								if ((*it)->getIsAuth() == true)
 								{
 									(*it)->write("ERROR :Can't change nick once authorized\r\n");
-									break ;
-								}
-								if (check.empty())
-								{
-									(*it)->write("ERROR :No nick given\r\n");
 									break ;
 								}
 								if (checkDupNickname(_users, (*it)->_incomingMsgs[1]))
@@ -313,19 +312,18 @@ void Server::runServer()
 							// [1] = userName
 							case USER:
 							{
-								std::string check = (*it)->_incomingMsgs[1];
+								if ((*it)->_incomingMsgs.size() < 2)
+								{
+									(*it)->write("ERROR :No username given\r\n");
+									break ;
+								}
 								if ((*it)->getIsAuth() == true)
 								{
 									(*it)->write("ERROR :Can't change user once authorized\r\n");
 									break ;
 								}
-								if (check.empty())
-								{
-									(*it)->write("ERROR :No username given\r\n");
-									break ;
-								}
 								(*it)->setUsername((*it)->_incomingMsgs[1]);
-								std::string msg = ":Your username has been changed to " + (*it)->getNickname() + "\r\n";
+								std::string msg = ":Your username has been changed to " + (*it)->getUsername() + "\r\n";
 								std::cout << "username has been set to " << (*it)->getUsername() << std::endl;
 								send((*it)->getFd(), msg.c_str(), msg.length(), 0);
 								break ;
@@ -509,15 +507,14 @@ void Server::runServer()
 							// [1] = password
 							case PASS:
 							{
-								std::string check = (*it)->_incomingMsgs[1];
+								if ((*it)->_incomingMsgs.size() < 2)
+								{
+									(*it)->write("ERROR :No password given\r\n");
+									break ;
+								}
 								if ((*it)->getIsAuth() == true)
 								{
 									(*it)->write("ERROR :Can't change pass once authorized\r\n");
-									break ;
-								}
-								if (check.empty())
-								{
-									(*it)->write("ERROR :No password given\r\n");
 									break ;
 								}
 								if ((*it)->_incomingMsgs[1] != _password)
@@ -628,8 +625,11 @@ void Server::runServer()
 									break ;
 								}
 
-								if ((*it)->_incomingMsgs.size() < 3)
+								if ((*it)->_incomingMsgs.size() != 3)
+								{
 									(*it)->write("ERROR :No channel or user given\r\n");
+									break ;
+								}
 								if ((*it)->_incomingMsgs[1][0] != '#')
 									(*it)->_incomingMsgs[1].insert(0, "#");
 								// bool userIsInChannel = false;
