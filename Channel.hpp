@@ -82,7 +82,7 @@ public:
 	bool		hasTopicRestrictions() const;
 
 	// Add the corresponding Users to the maps we need
-	void 		addMember(User* client);
+	int 		addMember(User* client);
 	void 		addInvited(User* client);
 	void 		addOperator(User* client, User* invoker);
 	void 		addBanned(User* client, User* invoker, const std::string& reason);
@@ -102,6 +102,6 @@ public:
     void		broadcast(const std::string& message);
 	//sedns a message to all Users except a specific User(s)
     void		broadcast(const std::string& message, User* exclude);
-    void		kick(User* client, User* target, const std::string& reason);
+    // void		kick(User* client, User* target, const std::string& reason);
 		
 };
