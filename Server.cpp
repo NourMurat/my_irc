@@ -32,16 +32,6 @@ void Server::setServerName(std::string serverName)
 	this->_serverName = serverName;
 }
 
-// Channel Server::getChannel(std::string name)
-// {
-// 	for (std::vector<Channel *>::iterator it = this->_channels.begin(); it != this->_channels.end(); ++it)
-// 	{
-// 		if ((*it)->getName() == name)
-// 			return (*it);
-// 	}
-// 	return NULL;
-// }
-
 void Server::removeChannelFromServer(std::string name)
 {
 	for (std::vector<Channel *>::iterator it = _channels.begin(); it != _channels.end(); ++it)

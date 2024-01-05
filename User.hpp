@@ -12,7 +12,6 @@
 
 #include "Irc.hpp"
 #include "Channel.hpp"
-// #include "Server.hpp"
 
 class User
 {
@@ -36,7 +35,6 @@ class User
 
 		std::vector<std::string>		_incomingMsgs;
 		std::vector<std::string>		_outgoingMsgs;
-		// std::deque<std::string>		messageDeque;
 
 		void        				closeSocket();
 		int     					getFd() const;
@@ -61,7 +59,6 @@ class User
 		void 						setIsAuth(bool isAuth);
 
 		void						addMessage(std::string msg);
-		// std::deque<std::string> 	getMessageDeque();
 		bool						getIsOP() const;
 		void						setIsOP(bool isOP);
 

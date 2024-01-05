@@ -292,7 +292,6 @@ void        Channel::broadcast(const std::string& message)
     client_iterator it = members.begin();
     while (it != members.end()) 
     {
-        // std::string prefixNickname = "+" + senderNickname;
         it->second->write(message);
         it++;
     }
@@ -301,7 +300,6 @@ void        Channel::broadcast(const std::string& message)
     it = operators.begin();
     while (it != operators.end()) 
     {
-        // std::string prefixNickname = "@" + senderNickname;
         it->second->write(message);
         it++;
     }
@@ -309,7 +307,6 @@ void        Channel::broadcast(const std::string& message)
     // Send a message to the owner of the channel
     if (owner != NULL) 
     {
-        // std::string prefixNickname = "@" + senderNickname;
         owner->write(message);
     }
 }
@@ -322,7 +319,6 @@ void        Channel::broadcast(const std::string& message, User* exclude)
     {
         if (it->second != exclude) 
         {
-            // std::string prefixNickname = ":+" + senderNickname;
             it->second->write(message);
         }
         it++;
@@ -334,7 +330,6 @@ void        Channel::broadcast(const std::string& message, User* exclude)
     {
         if (it->second != exclude) 
         {
-            // std::string prefixNickname = "@" + senderNickname;
             it->second->write(message);
         }
         it++;
@@ -343,47 +338,6 @@ void        Channel::broadcast(const std::string& message, User* exclude)
     // Send a message to the channel owner, excluding the specified User
     if (owner != NULL && owner != exclude) 
     {
-        // std::string prefixNickname = "@" + senderNickname;
         owner->write(message);
     }
 }
-
-// void        Channel::kick(User* client, User* target, const std::string& reason) 
-// {
-//     // Check if the client has kick privileges (owner or operator)
-//     if (operators.find(client->getNickname()) != operators.end() || owner == client) 
-//     {
-//         // Check if the target is the channel owner
-//         if (target == owner) 
-//         {
-//             client->write("NOTICE " + name + " :You cannot kick the channel owner.\r\n");
-//             return;
-//         }
-
-//         // Search for the target in different maps
-//         client_iterator itMember = members.find(target->getNickname());
-//         client_iterator itOperator = operators.find(target->getNickname());
-//         client_iterator itInvited = invited.find(target->getNickname());
-//         client_iterator itBanned = banned.find(target->getNickname());
-
-//         // Perform kick if the target is found in any of the maps
-//         if (itMember != members.end() || itOperator != operators.end() ||
-//             itInvited != invited.end() || itBanned != banned.end()) 
-//         {
-
-//             // Send kick notification to IRC chat
-//             std::string kickMessage = "KICK " + name + " " + target->getNickname() + " :" + reason;
-//             broadcast(kickMessage);
-
-//             // Remove the target from appropriate maps using existing functions
-//             if (itMember != members.end()) removeUserFromChannel(target);
-//             if (itOperator != operators.end()) takeOperatorPrivilege(target);
-//             if (itInvited != invited.end()) removeInvited(target);
-//             if (itBanned != banned.end()) removeBanned(target);
-
-//             // // Write a log entry for the kick
-//             // std::string logMessage = target->getNickname() + " was kicked from channel " + name + " by " + client->getNickname() + " (" + reason + ")";
-//             // log(logMessage);
-//         }
-//     }
-// }

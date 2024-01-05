@@ -1,7 +1,5 @@
 #pragma once
 
-// #include "Server.hpp"
-// #include "User.hpp"
 #include "Irc.hpp"
 #include <map>
 #include <string>
@@ -23,10 +21,6 @@ private:
 	size_t 			limit; //The limit on the number of members allowed in the channel
 	bool 			inviteOnly; // A Boolean flag indicating whether the channel is by invitation or not
 	bool			topicRestrictions; // A Boolean flag indicating whether the topic can be changed by anyone or not
-	// bool l;
-	// bool o;
-	// bool k;
-	// bool t;
 
 	// Channel();
 
@@ -89,7 +83,6 @@ public:
 
 	// Remove the corresponding Users from the map we need
 	int 		removeUserFromChannel(User* client);
-	// void		removeOperatorFromChannel(User* client);
 	void 		takeOperatorPrivilege(User* client);
 	void 		removeInvited(User* client);
 	void 		removeBanned(User* client);
@@ -102,6 +95,5 @@ public:
     void		broadcast(const std::string& message);
 	//sedns a message to all Users except a specific User(s)
     void		broadcast(const std::string& message, User* exclude);
-    // void		kick(User* client, User* target, const std::string& reason);
 		
 };
