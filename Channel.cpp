@@ -8,7 +8,7 @@
 
 Channel::Channel(std::string nameValue, User *ownerValue) : 
         name(nameValue), pass(""), topic(""), 
-        owner(ownerValue), limit(0), inviteOnly(false) {}
+        owner(ownerValue), limit(0), inviteOnly(false), topicRestrictions(false) {}
 
 Channel::~Channel() {}
 
@@ -32,10 +32,10 @@ const std::map<std::string, User* >&    Channel::getBanned() const { return bann
 
 void        Channel::setName(std::string nameValue) { name = nameValue; }
 void        Channel::setPass(std::string passValue) { pass = passValue; }
-void        Channel::setTopic(std::string topicValue) { pass = topicValue; }
+void        Channel::setTopic(std::string topicValue) { topic = topicValue; }
 void        Channel::setLimit(size_t limitValue) { limit = limitValue; }
 void        Channel::setInviteOnly(bool value) { inviteOnly = value; }
-
+void        Channel::setTopicRestrictions(bool value) { topicRestrictions = value; }
 /* Channel Methods */
 
 // Whether the channel is an invitation-only channel
@@ -59,29 +59,33 @@ bool        Channel::hasUserLimit() const { return limit > 0; }
 // whether the channel has a set key (password)
 bool        Channel::hasChannelKey() const { return !pass.empty(); }
 
-// bool        Channel::hasTopicRestrictions() const { return topic; }
+bool        Channel::hasTopicRestrictions() const { return topicRestrictions; }
 
 // Adding a User to the member map if it is not already there
-void        Channel::addMember(User* client) 
+int        Channel::addMember(User* client) 
 {
     if (inviteOnly)
     { // If the channel is invitation-only
         if (invited.find(client->getNickname()) == invited.end())
         {
             // The User is not invited, send a message
-            std::string message = "NOTICE " + name + " :" + client->getNickname() + " :You're not invited to join this channel\r\n";
+            std::string message = "ERROR :You're NOT INVITED to join this channel\r\n";
             client->write(message);
-            return;
+            return 1;
         }
     }
 
     if (members.find(client->getNickname()) == members.end()) 
     {
-        // if (members.find(client->getNickname()) == owner)
-        //     return;
         members[client->getNickname()] = client;
-        std::cout << MAGENTA << "DEBUGG:: ADD MEMBER (" << members[client->getNickname()]->getNickname() << ") IN THE NEW CHANNEL (" << getName() << ") !!!" << RESET << "\n";
+        std::cout << GREEN << "LOG:: ADD MEMBER (" << members[client->getNickname()]->getNickname() 
+                << ") IN THE NEW CHANNEL (" << getName() << ") !!!" << RESET << "\n";
+        if (inviteOnly && invited.find(client->getNickname()) != invited.end())
+        {
+            invited.erase(client->getNickname());
+        }
     }
+    return 0;
 }
 
 // Adding a User to the invite map if he is not already there
@@ -112,18 +116,18 @@ void        Channel::addOperator(User* client, User* invoker)
         {
             operators[client->getNickname()] = client;
             std::string nick = client->getNickname();
-            members.erase(client->getNickname());
+            members.erase(nick);
 
-            if (members.find(client->getNickname()) == members.end())
+            if (members.find(nick) == members.end())
             {
                 // Успешно удален из списка членов и добавлен в операторы
-                std::string broadcastMessage = "NOTICE " + name + " :(" + client->getNickname() + ") has become Operator in this channel!\r\n";
+                std::string broadcastMessage = "NOTICE " + name + " :(" + nick + ") has become Operator in this channel!\r\n";
                 broadcast(broadcastMessage);
             }
             else
             {
                 // Ошибка: пользователь не был удален из списка членов
-                std::string errorMessage = "ERROR :Failed to add (" + client->getNickname() + ") as an Operator.\r\n";
+                std::string errorMessage = "ERROR :Failed to add (" + nick + ") as an Operator.\r\n";
                 broadcast(errorMessage);
             }
         }
@@ -140,21 +144,6 @@ void        Channel::addOperator(User* client, User* invoker)
         std::string errorMessage = "ERROR :You do not have the permission to add Operators in this channel.\r\n";
         invoker->write(errorMessage);
     }
-
-    // // Access rights check: owner or operators can add operators
-    // if (operators.find(invoker->getNickname()) != operators.end() || owner == invoker) 
-    // {
-    //     std::map<std::string, User*>::iterator itMemeber = members.find(client->getNickname());
-    //     if (operators.find(client->getNickname()) == operators.end() && itMemeber != members.end()) 
-    //     {
-    //         operators[client->getNickname()] = client;
-    //         members.erase(client->getNickname());
-    //         std::string message = "NOTICE " + name + " :(" + client->getNickname() + ") has become Operator in this chanel!\r\n";
-    //         broadcast(message);
-    //         if (members.find(client->getNickname()) == members.end())
-    //             std::cout << MAGENTA << "LOG:: ADD OPERATOR (" << members[client->getNickname()]->getNickname() << ") IN THE CHANNEL (" << name << ") !!!" << RESET << "\n";
-    //     }
-    // }
 }
 
 // Adding a User to the banned map if it is not already there
@@ -171,10 +160,6 @@ void        Channel::addBanned(User* client, User* invoker, const std::string& r
             std::string notice = "NOTICE " + name + " :" + client->getNickname() + " has been banned by " + invoker->getNickname() + " (" + reason + ")";
             // Отправляем 'notice' всем клиентам в этом канале
             broadcast(notice);
-
-            // // Saving information about the ban in the logbook
-            // std::string logMessage = client->getNickname() + " был забанен оператором " + invoker->getNickname() + " по причине: " + reason;
-            // log(logMessage);
         }
     }
 }
@@ -190,28 +175,21 @@ int        Channel::removeUserFromChannel(User* client)
     
     if (itMember != members.end()) 
     {
-        std::cout << MAGENTA << "LOG:: REMOVE MEMBER (" << members[client->getNickname()]->getNickname() << ") FROM THE CHANNEL (" << getName() << ") !!!" << RESET << "\n";
+        std::cout << GREEN << "LOG:: REMOVE MEMBER (" << members[client->getNickname()]->getNickname() << ") FROM THE CHANNEL (" << getName() << ") !!!" << RESET << "\n";
         std::string channelMsg = ":" + client->getNickname() + " PART " + name + " :Goodbye member!" + "\r\n";
 		broadcast(channelMsg, client);
         members.erase(itMember);
-
-        // std::string logMessage = client->getNickname() + " has left channel " + name;
-        // log(logMessage);
     }
     else if (itOperator != operators.end())
     {
-        std::cout << MAGENTA << "LOG:: REMOVE OPERATOR (" << operators[client->getNickname()]->getNickname() << ") FROM THE CHANNEL (" << getName() << ") !!!" << RESET << "\n";
+        std::cout << GREEN << "LOG:: REMOVE OPERATOR (" << operators[client->getNickname()]->getNickname() << ") FROM THE CHANNEL (" << getName() << ") !!!" << RESET << "\n";
         std::string channelMsg = ":" + client->getNickname() + " PART " + name + " :Goodbye operator!" + "\r\n";
 		broadcast(channelMsg, client);
-        takeOperatorPrivilege(itOperator->second);
-        members.erase(itOperator);
-
-        // std::string logMessage = client->getNickname() + " has left channel " + name;
-        // log(logMessage);
+        operators.erase(itOperator);
     }
     else if (owner == client)
     {
-        std::cout << MAGENTA << "LOG:: REMOVE OWNER (" << owner->getNickname() << ") FROM THE CHANNEL (" << name << ") !!!" << RESET << "\n";
+        std::cout << GREEN << "LOG:: REMOVE OWNER (" << owner->getNickname() << ") FROM THE CHANNEL (" << name << ") !!!" << RESET << "\n";
         std::string channelMsg = ":" + client->getNickname() + " PART " + name + " :Goodbye owner!" + "\r\n";
         broadcast(channelMsg);
 
@@ -224,13 +202,13 @@ int        Channel::removeUserFromChannel(User* client)
             
             owner = itOperator->second; // Назначаем нового хозяина
             std::string nickOperator = itOperator->first;
-            operators.erase(itOperator);
             if (operators.find(nickOperator) == operators.end())
             {
-                std::cout << MAGENTA << "LOG:: (" << owner->getNickname() << ") IS A NEW OWNER OF THE CHANNEL (" << name << ") !!!" << RESET << "\n";
+                std::cout << GREEN << "LOG:: (" << owner->getNickname() << ") IS A NEW OWNER OF THE CHANNEL (" << name << ") !!!" << RESET << "\n";
                 std::string channelMsg = "NOTICE " + name + " :" + client->getNickname() + " no more owner of the channel " + name + ". New owner is " + owner->getNickname() + "\r\n";
                 broadcast(channelMsg, client);
             }
+            operators.erase(itOperator);
         }
         // Если операторов нет, но есть обычные члены
         else if (!members.empty())
@@ -241,49 +219,41 @@ int        Channel::removeUserFromChannel(User* client)
             
             owner = itMember->second; // Назначаем нового хозяина
             std::string nickMember = itMember->first;
-            members.erase(itMember);
             if (members.find(nickMember) == members.end())
             {
-                std::cout << MAGENTA << "LOG:: (" << owner->getNickname() << ") IS A NEW OWNER OF THE CHANNEL (" << name << ") !!!" << RESET << "\n";
+                std::cout << GREEN << "LOG:: (" << owner->getNickname() << ") IS A NEW OWNER OF THE CHANNEL (" << name << ") !!!" << RESET << "\n";
                 std::string channelMsg = "NOTICE " + name + " :" + client->getNickname() + " no more owner of the channel " + name + ". New owner is " + owner->getNickname() + "\r\n";
                 broadcast(channelMsg, client);
             }
+            members.erase(itMember);
         }
         // Если хозяин - единственный член канала
         else
         {
             // Логика удаления канала
-            std::cout << MAGENTA << "LOG:: the channel (" + name + ") was closed!" << RESET << "\n";
+            std::cout << GREEN << "LOG:: the channel (" + name + ") was closed!" << RESET << "\n";
             return 1;
         }
-    // Deleting a channel a User is a member of
-    client->removeChannelOfClient(name);
     }
     return 0;
+}
+
+size_t      Channel::countUsers(Channel* channel) const
+{
+    return (channel->members.size() + channel->operators.size() + 1);
 }
 
 // Removing an operator from map operators
 void        Channel::takeOperatorPrivilege(User* target) 
 {
-    // // Check if the User is the channel owner
-    // if (owner == target) {
-    //     target->write("NOTICE " + name + " :You are not authorized to remove owner.");
-    //     return;
-    // }
-    
     operator_iterator it = operators.find(target->getNickname());
     if (it != operators.end()) 
     {
-        
         // Adding an operator to the ordinary membership map
         members[target->getNickname()] = target;
-        
-        operators.erase(it);
         std::string message = "NOTICE " + name + " :(" + target->getNickname() + ") no more Operator in this chanel!\r\n";
         broadcast(message);
-
-        // std::string logMessage = target->getNickname() + " is no longer an operator in channel " + name;
-        // log(logMessage);
+        operators.erase(it);
     }
 }
 
@@ -295,11 +265,7 @@ void        Channel::removeInvited(User* client)
     {
         std::string message = "INVITE " + client->getNickname() + " :" + name + "\r\n";
         client->write(message);
-        
         invited.erase(it);
-
-        // std::string logMessage = client->getNickname() + " is no longer invited to channel " + name;
-        // log(logMessage);
     }
 }
 
@@ -311,19 +277,12 @@ void        Channel::removeBanned(User* client)
     {
         std::string message = "MODE " + name + " +b " + client->getNickname() + "\r\n";
         broadcast(message);
-        
         banned.erase(it);
-
-        // std::string logMessage = client->getNickname() + " has been unbanned from channel " + name;
-        // log(logMessage);
     }
 }
 
 void        Channel::removeUserLimit() { limit = 0; }
 void        Channel::removeChannelKey() { pass.clear(); }
-void        Channel::removeTopicRestrictions() { topic.clear(); }
-
-
 
 void        Channel::broadcast(const std::string& message)
 {
@@ -331,7 +290,6 @@ void        Channel::broadcast(const std::string& message)
     client_iterator it = members.begin();
     while (it != members.end()) 
     {
-        // std::string prefixNickname = "+" + senderNickname;
         it->second->write(message);
         it++;
     }
@@ -340,7 +298,6 @@ void        Channel::broadcast(const std::string& message)
     it = operators.begin();
     while (it != operators.end()) 
     {
-        // std::string prefixNickname = "@" + senderNickname;
         it->second->write(message);
         it++;
     }
@@ -348,7 +305,6 @@ void        Channel::broadcast(const std::string& message)
     // Send a message to the owner of the channel
     if (owner != NULL) 
     {
-        // std::string prefixNickname = "@" + senderNickname;
         owner->write(message);
     }
 }
@@ -361,7 +317,6 @@ void        Channel::broadcast(const std::string& message, User* exclude)
     {
         if (it->second != exclude) 
         {
-            // std::string prefixNickname = ":+" + senderNickname;
             it->second->write(message);
         }
         it++;
@@ -373,7 +328,6 @@ void        Channel::broadcast(const std::string& message, User* exclude)
     {
         if (it->second != exclude) 
         {
-            // std::string prefixNickname = "@" + senderNickname;
             it->second->write(message);
         }
         it++;
@@ -382,47 +336,6 @@ void        Channel::broadcast(const std::string& message, User* exclude)
     // Send a message to the channel owner, excluding the specified User
     if (owner != NULL && owner != exclude) 
     {
-        // std::string prefixNickname = "@" + senderNickname;
         owner->write(message);
-    }
-}
-
-void        Channel::kick(User* client, User* target, const std::string& reason) 
-{
-    // Check if the client has kick privileges (owner or operator)
-    if (operators.find(client->getNickname()) != operators.end() || owner == client) 
-    {
-        // Check if the target is the channel owner
-        if (target == owner) 
-        {
-            client->write("NOTICE " + name + " :You cannot kick the channel owner.\r\n");
-            return;
-        }
-
-        // Search for the target in different maps
-        client_iterator itMember = members.find(target->getNickname());
-        client_iterator itOperator = operators.find(target->getNickname());
-        client_iterator itInvited = invited.find(target->getNickname());
-        client_iterator itBanned = banned.find(target->getNickname());
-
-        // Perform kick if the target is found in any of the maps
-        if (itMember != members.end() || itOperator != operators.end() ||
-            itInvited != invited.end() || itBanned != banned.end()) 
-        {
-
-            // Send kick notification to IRC chat
-            std::string kickMessage = "KICK " + name + " " + target->getNickname() + " :" + reason;
-            broadcast(kickMessage);
-
-            // Remove the target from appropriate maps using existing functions
-            if (itMember != members.end()) removeUserFromChannel(target);
-            if (itOperator != operators.end()) takeOperatorPrivilege(target);
-            if (itInvited != invited.end()) removeInvited(target);
-            if (itBanned != banned.end()) removeBanned(target);
-
-            // // Write a log entry for the kick
-            // std::string logMessage = target->getNickname() + " was kicked from channel " + name + " by " + client->getNickname() + " (" + reason + ")";
-            // log(logMessage);
-        }
     }
 }

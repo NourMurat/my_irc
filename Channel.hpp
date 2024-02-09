@@ -1,7 +1,5 @@
 #pragma once
 
-// #include "Server.hpp"
-// #include "User.hpp"
 #include "Irc.hpp"
 #include <map>
 #include <string>
@@ -22,12 +20,7 @@ private:
 	User*			owner; //A pointer to the User who is the owner of the channel
 	size_t 			limit; //The limit on the number of members allowed in the channel
 	bool 			inviteOnly; // A Boolean flag indicating whether the channel is by invitation or not
-	// bool l;
-	// bool o;
-	// bool k;
-	// bool t;
-
-	// Channel();
+	bool			topicRestrictions; // A Boolean flag indicating whether the topic can be changed by anyone or not
 
 public:
 	Channel( std::string, User*);
@@ -48,13 +41,13 @@ public:
 	User*			getOwner() const;
     size_t			getLimit() const;
     size_t			getSize() const;
-
 	// Get a maps of all channel members, as well as a list of invited Users, 
 	// all operators and banned cUsers
     const std::map<std::string, User *>&	getMembers() const;
 	const std::map<std::string, User *>&	getInvited() const;
     const std::map<std::string, User *>&	getOperators() const;
 	const std::map<std::string, User *>&	getBanned() const;
+	size_t      							countUsers(Channel* channel) const;
 
 
 /* Setters */
@@ -64,7 +57,7 @@ public:
 	void		setTopic(std::string topicValue);
 	void		setLimit(size_t limitValue);
 	void		setInviteOnly(bool value);
-
+	void		setTopicRestrictions(bool value);
 
 /* Channel Methods */
 
@@ -80,26 +73,23 @@ public:
 	bool		hasTopicRestrictions() const;
 
 	// Add the corresponding Users to the maps we need
-	void 		addMember(User* client);
+	int 		addMember(User* client);
 	void 		addInvited(User* client);
 	void 		addOperator(User* client, User* invoker);
 	void 		addBanned(User* client, User* invoker, const std::string& reason);
 
 	// Remove the corresponding Users from the map we need
 	int 		removeUserFromChannel(User* client);
-	// void		removeOperatorFromChannel(User* client);
 	void 		takeOperatorPrivilege(User* client);
 	void 		removeInvited(User* client);
 	void 		removeBanned(User* client);
 	void		removeUserLimit();
 	void		removeChannelKey();
-	void		removeTopicRestrictions();
 	void		removeOwnerFromChannel();
 
 	//sends a message to all Users
     void		broadcast(const std::string& message);
 	//sedns a message to all Users except a specific User(s)
     void		broadcast(const std::string& message, User* exclude);
-    void		kick(User* client, User* target, const std::string& reason);
 		
 };

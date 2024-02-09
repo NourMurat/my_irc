@@ -17,13 +17,13 @@
 #include "User.hpp"
 #include "Channel.hpp"
 #include <csignal>
+#include <cstdlib> // exit(signal)
 
 #include <netinet/in.h>
 
 const int MAX_CLIENTS = 4096;
 
 class User;
-// class Channel;
 class Server; // to use static signal and shutdown functions
 extern Server* globalServerInstance; // to use static signal and shutdown functions
 
@@ -50,8 +50,6 @@ enum e_commands
 class Server
 {
     private:
-        // char            _buffer[4096];
-
 		std::string 		_serverName;
         std::string     	_password;
         int             	_port;
@@ -77,7 +75,6 @@ class Server
 		std::vector<pollfd>		_fds;
 		std::vector<User *>		_users;
 		std::vector<Channel *>	_channels;
-		// void				createNewUser(int fd);
 
 		void 				execMessage(User *user);
 		int 				checkDupNickname(std::vector<User *> users, std::string nickname);
@@ -85,7 +82,7 @@ class Server
 		static void			sigIntHandler(int signal);
 		static void			sigTermHandler(int signal);
 		static void			shutdownServer();
-		void				authenticateUser(int i);
+		bool				authenticateUser(int i);
 		Channel*			getChannel(std::string name);
 		int					isCommand(std::string command);
 

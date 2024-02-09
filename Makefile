@@ -8,7 +8,7 @@ FILES = main.cpp				\
 
 OBJ = $(FILES:.cpp=.o)
 
-CXXFLAGS = -std=c++98 -Wall -Werror -Wextra -g3 -fsanitize=address
+CXXFLAGS = -std=c++98 -Wall -Werror -Wextra -g3
 
 CXX = c++
 
